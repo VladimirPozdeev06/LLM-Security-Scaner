@@ -46,21 +46,47 @@ def change_dataset_column_to_necessary_form(dataset:Dataset,
     dataset=dataset[['prompt','is_unsafe']]
     return dataset
 
+def complete_process_loading_dataset(path_to_dataset:str,
+                 source_type:Literal['csv','kaggle','Hugging Face'],
+                 prompt_column: str,
+                 dataset_name:str=None,
+                 file_name:str=None,
+                 split:str=None,
+                 print_info:bool=False,
+                 different_prompt_category: bool = False,
+                 is_unsafe: bool = None,
+                 category_column: str = None,
+                 unsafe_prompt_category: str = None
+
+                                     )->pd.DataFrame:
+    data=load_dataset_from_source(path_to_dataset=path_to_dataset,
+                                  source_type=source_type,
+                                  file_name=file_name,
+                                  split=split,
+                                  print_info=print_info)
+    data=change_dataset_column_to_necessary_form(dataset=data,
+                                                 prompt_column=prompt_column,
+                                                 different_prompt_category=different_prompt_category,
+                                                 is_unsafe=is_unsafe,
+                                                 category_column=category_column,
+                                                 unsafe_prompt_category=unsafe_prompt_category)
+    data=data.drop_duplicates(subset=['prompt'])
+    data['from_dataset']=f'{dataset_name}'
+    return data
+
 if __name__=='__main__':
-    Prompt_Injection_Malignant_dataset=load_dataset_from_source(
+
+    Prompt_Injection_Malignant_dataset=complete_process_loading_dataset(
         path_to_dataset="marycamilainfo/prompt-injection-malignant",
         source_type='kaggle',
-        file_name='malignant.csv',
-
-        print_info=True
-    )
-    Prompt_Injection_Malignant_dataset=change_dataset_column_to_necessary_form(
-        Prompt_Injection_Malignant_dataset,
         prompt_column='text',
+        dataset_name='prompt_injection_malignant',
+        file_name='malignant.csv',
+        print_info=True,
         different_prompt_category=True,
         category_column='category',
         unsafe_prompt_category='jailbreak'
     )
-    print(Prompt_Injection_Malignant_dataset['is_unsafe'].value_counts())
+    print(Prompt_Injection_Malignant_dataset.info())
 
 
