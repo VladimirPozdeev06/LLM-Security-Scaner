@@ -79,6 +79,14 @@ def category_cleaning(data:pd.DataFrame,
             ignore_index=True
         )
     return Dataset.from_pandas(short_data)
+
+def clasteresation_nested_prompts(data:pd.DataFrame,nested_prompt_column:str,prompt_column:str,n_samples:int,n_first_words:int)->Dataset:
+    data[nested_prompt_column]=np.where(data[nested_prompt_column].str.contains('image'),data[prompt_column],data[nested_prompt_column])
+    data['first_words']=data[nested_prompt_column].apply(lambda x:' '.join(x.split()[:n_first_words]))
+    data['count']=data.groupby('first_words')['first_words'].transform('count')
+    data=data[data['count']>=n_samples]
+    data_sample=data.groupby('first_words').apply(lambda x:x.sample(n_samples)).reset_index(drop=True)
+    return Dataset.from_pandas(data_sample)
 def complete_process_loading_dataset(path_to_dataset:str,
                  source_type:Literal['csv','kaggle','Hugging Face'],
                  prompt_column: str,
@@ -93,6 +101,10 @@ def complete_process_loading_dataset(path_to_dataset:str,
                  category_column: str = None,
                  unsafe_prompt_category:Union[str,int] = None,
                  is_special_cleaning: bool = False,
+                 is_clasteresation: bool = False,
+                 nested_prompt_column:str=None,
+                 n_samples:int=3,
+                 n_first_words:int=5,
                  list_categories:list=None,
                  target_category_column:str=None,
                                      )->pd.DataFrame:
@@ -104,12 +116,19 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                   print_info=print_info)
     if is_special_cleaning:
         data=category_cleaning(data.to_pandas())
+    if is_clasteresation:
+        data=clasteresation_nested_prompts(data=data.to_pandas(),
+                                           nested_prompt_column=nested_prompt_column,
+                                           prompt_column=prompt_column,
+                                           n_samples=n_samples,
+                                           n_first_words=n_first_words)
     data=change_dataset_column_to_necessary_form(dataset=data,
                                                  prompt_column=prompt_column,
                                                  different_prompt_category=different_prompt_category,
                                                  is_unsafe=is_unsafe,
                                                  category_column=category_column,
                                                  unsafe_prompt_category=unsafe_prompt_category)
+
     data=data.drop_duplicates(subset=['prompt'])
     data['from_dataset']=f'{dataset_name}'
     return data
@@ -233,7 +252,7 @@ if __name__=='__main__':
     print('LLM_LAT_harmful_dataset:')
     print(LLM_LAT_harmful_dataset.info())
 
-    Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset=LLM_LAT_harmful_dataset=complete_process_loading_dataset(
+    Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset=complete_process_loading_dataset(
         path_to_dataset="Mindgard/evaded-prompt-injection-and-jailbreak-samples",
         source_type='Hugging Face',
         split='train',
@@ -275,3 +294,75 @@ if __name__=='__main__':
     )
     print('jackhhao_jailbreak_classification_dataset_test:')
     print(jackhhao_jailbreak_classification_dataset_test.info())
+
+    Deep1994_ReNeLLM_Jailbreak_dataset=complete_process_loading_dataset(
+        path_to_dataset="Deep1994/ReNeLLM-Jailbreak",
+        source_type='Hugging Face',
+        split='train',
+        print_info=True,
+        dataset_name='Deep1994_ReNeLLM_Jailbreak',
+        prompt_column='original_harm_behavior',
+        different_prompt_category=False,
+        is_unsafe=True
+
+    )
+    print('Deep1994_ReNeLLM_Jailbreak_dataset:')
+    print(Deep1994_ReNeLLM_Jailbreak_dataset.info())
+
+    prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset=complete_process_loading_dataset(
+        path_to_dataset="forbidden_question_set_with_prompts.csv",
+        source_type='csv',
+
+        print_info=True,
+        dataset_name='forbidden_question_set_with_prompts',
+        prompt_column='Prompt',
+        different_prompt_category=False,
+        is_unsafe=True,
+        is_clasteresation=True,
+        nested_prompt_column='Prompt',
+        n_samples=10,
+        n_first_words=5
+
+    )
+    print('prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset:')
+    print(prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset.info())
+
+    JailbreakV_28K_dataset=complete_process_loading_dataset(
+        path_to_dataset="JailbreakV-28K/JailBreakV-28k",
+        source_type='Hugging Face',
+        name='JailBreakV_28K',
+        split='JailBreakV_28K',
+        print_info=True,
+        dataset_name='JailBreakV_28K',
+        prompt_column='jailbreak_query',
+        different_prompt_category=False,
+        is_unsafe=True,
+        is_clasteresation=True,
+        nested_prompt_column='jailbreak_query',
+        n_samples=3,
+        n_first_words=5
+    )
+    print('JailbreakV_28K_dataset:')
+    print(JailbreakV_28K_dataset.info())
+    dataset_list = [
+        Prompt_Injection_Malignant_dataset,
+        prompt_injection_suffix_attack_adv_prompts_dataset,
+        prompt_injection_suffix_attack_viccuna_prompts_dataset,
+        prompt_injection_suffix_in_the_wild_forbidden_question_set_df_dataset,
+        prompt_injection_suffix_in_the_wild_jailbreak_prompts_dataset,
+        train_deepset_prompt_injections_dataset,
+        test_deepset_prompt_injections_dataset,
+        JailbreakBench_JBB_Behaviors_dataset,
+        LLM_LAT_harmful_dataset,
+        Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset,
+        jackhhao_jailbreak_classification_dataset_train,
+        jackhhao_jailbreak_classification_dataset_test,
+        Deep1994_ReNeLLM_Jailbreak_dataset,
+        prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset,
+        JailbreakV_28K_dataset
+    ]
+
+    final_data=pd.concat(dataset_list)
+    final_data = final_data.drop_duplicates(subset=['prompt'])
+    print(final_data.info())
+    print(final_data['is_unsafe'].value_counts())
