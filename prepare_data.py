@@ -344,6 +344,31 @@ if __name__=='__main__':
     )
     print('JailbreakV_28K_dataset:')
     print(JailbreakV_28K_dataset.info())
+
+    tatsu_lab_alpaca=complete_process_loading_dataset(
+        path_to_dataset="tatsu-lab/alpaca",
+        source_type='Hugging Face',
+        split='train',
+        prompt_column='instruction',
+        print_info=True,
+        dataset_name='tatsu_lab_alpaca',
+        different_prompt_category=False,
+        is_unsafe=False
+    ).sample(6000)
+    print('tatsu_lab_alpaca:')
+    print(tatsu_lab_alpaca.info())
+
+    akoksal_LongForm = complete_process_loading_dataset(
+        path_to_dataset="akoksal/LongForm",
+        source_type='Hugging Face',
+        split='train',
+        prompt_column='input',
+        print_info=True,
+        dataset_name='akoksal_LongForm',
+        different_prompt_category=False,
+        is_unsafe=False
+    )
+    akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=13000)].sample(1500)
     dataset_list = [
         Prompt_Injection_Malignant_dataset,
         prompt_injection_suffix_attack_adv_prompts_dataset,
@@ -359,7 +384,9 @@ if __name__=='__main__':
         jackhhao_jailbreak_classification_dataset_test,
         Deep1994_ReNeLLM_Jailbreak_dataset,
         prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset,
-        JailbreakV_28K_dataset
+        JailbreakV_28K_dataset,
+        tatsu_lab_alpaca,
+        akoksal_LongForm
     ]
 
     final_data=pd.concat(dataset_list)
