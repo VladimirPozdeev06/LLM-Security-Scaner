@@ -46,14 +46,13 @@ class ObscuredText:
         return ''.join(result_text)
 
     def underline_accent_marks(self, text):
-        accents = ['\u0300', '\u0301', '\u0302', '\u0303', '\u0304',
-                   '\u0306', '\u0307', '\u0308', '\u030A', '\u0332']
+
+        accents = ['\u0332', '\u0333', '\u0331', '\u0330']
 
         result_text = []
         for symbol in text:
             result_text.append(symbol)
             if symbol.isalpha() and random.random() < self.intensity:
-
                 result_text.append(random.choice(accents))
         return ''.join(result_text)
 
@@ -197,9 +196,9 @@ class ObscuredText:
 
 def apply_obscured_transformation(prompts_column:pd.Series,
                                   transformation_function_list:list,
-                                  number_transformed_prompts_by_category:int):
+                                  number_transformed_prompts_by_category:int,seed:int=17,intensity:float=0.5):
     number_total_transformed_prompts=number_transformed_prompts_by_category*len(prompts_column)
-    obfuscator = ObscuredText(seed=42, intensity=0.5)
+    obfuscator = ObscuredText(seed=seed, intensity=intensity)
     result_column=prompts_column.copy()
     index_to_transform=random.sample(range(len(prompts_column)), number_total_transformed_prompts)
     idx_pos=0
@@ -218,7 +217,7 @@ def apply_obscured_transformation(prompts_column:pd.Series,
 
 if __name__ == "__main__":
 
-    obfuscator = ObscuredText(seed=42, intensity=0.3)
+    obfuscator = ObscuredText(seed=42, intensity=0.7)
 
     test_text = "Hello World! Test 123"
 
