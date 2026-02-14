@@ -280,6 +280,7 @@ if __name__=='__main__':
     )
     print('jackhhao_jailbreak_classification_dataset_train:')
     print(jackhhao_jailbreak_classification_dataset_train.info())
+
     jackhhao_jailbreak_classification_dataset_test = complete_process_loading_dataset(
         path_to_dataset="jackhhao/jailbreak-classification",
         source_type='Hugging Face',
@@ -345,6 +346,36 @@ if __name__=='__main__':
     print('JailbreakV_28K_dataset:')
     print(JailbreakV_28K_dataset.info())
 
+    allenai_wildguardmix_train=complete_process_loading_dataset(
+        path_to_dataset="allenai/wildguardmix",
+        source_type='Hugging Face',
+        name='wildguardtrain',
+        split='train',
+        print_info=True,
+        dataset_name='allenai_wildguardmix',
+        prompt_column='prompt',
+        different_prompt_category=True,
+        category_column='prompt_harm_label',
+        unsafe_prompt_category='harmful'
+    )
+    print('allenai_wildguardmix_train:')
+    print(allenai_wildguardmix_train.info())
+
+    allenai_wildguardmix_test = complete_process_loading_dataset(
+        path_to_dataset="allenai/wildguardmix",
+        source_type='Hugging Face',
+        name='wildguardtest',
+        split='test',
+        print_info=True,
+        dataset_name='allenai_wildguardmix',
+        prompt_column='prompt',
+        different_prompt_category=True,
+        category_column='prompt_harm_label',
+        unsafe_prompt_category='harmful'
+    )
+    print('allenai_wildguardmix_test:')
+    print(allenai_wildguardmix_test.info())
+
     tatsu_lab_alpaca=complete_process_loading_dataset(
         path_to_dataset="tatsu-lab/alpaca",
         source_type='Hugging Face',
@@ -386,10 +417,13 @@ if __name__=='__main__':
         prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset,
         JailbreakV_28K_dataset,
         tatsu_lab_alpaca,
-        akoksal_LongForm
+        akoksal_LongForm,
+        allenai_wildguardmix_train,
+        allenai_wildguardmix_test
     ]
 
     final_data=pd.concat(dataset_list)
     final_data = final_data.drop_duplicates(subset=['prompt'])
     print(final_data.info())
     print(final_data['is_unsafe'].value_counts())
+   #добавить fcp + сделать кривые безопасные промпты + еще бы данные найтй
