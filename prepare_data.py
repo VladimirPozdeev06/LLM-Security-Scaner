@@ -7,7 +7,7 @@ from typing import Literal,Union
 import re
 from dotenv import load_dotenv
 load_dotenv()
-
+from TextSpecialChanges import apply_obscured_transformation
 def load_dataset_from_source(path_to_dataset:str,
                  source_type:Literal['csv','kaggle','Hugging Face'],
                  name:str=None,
@@ -424,6 +424,6 @@ if __name__=='__main__':
 
     final_data=pd.concat(dataset_list)
     final_data = final_data.drop_duplicates(subset=['prompt'])
+    final_data['prompt']=apply_obscured_transformation(final_data['prompt'])
     print(final_data.info())
     print(final_data['is_unsafe'].value_counts())
-   #добавить fcp + сделать кривые безопасные промпты + еще бы данные найтй

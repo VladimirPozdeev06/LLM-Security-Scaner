@@ -195,8 +195,19 @@ class ObscuredText:
 
 
 def apply_obscured_transformation(prompts_column:pd.Series,
-                                  transformation_function_list:list,
-                                  number_transformed_prompts_by_category:int,seed:int=17,intensity:float=0.5):
+                                  transformation_function_list:list= ['deep_word_bug',
+                                                                      'diacritics',
+                                                                      'underline_accent_marks',
+                                                                      'upside_down_text',
+                                                                      'bidirectional_text',
+                                                                      'full_width_text',
+                                                                      'emoji_smuggling',
+                                                                      'spaces_text',
+                                                                      'homoglyphs',
+                                                                      'unicode_tags_smuggling',
+                                                                      'numbers_text'
+],
+                                  number_transformed_prompts_by_category:int=10,seed:int=17,intensity:float=0.5):
     number_total_transformed_prompts=number_transformed_prompts_by_category*len(prompts_column)
     obfuscator = ObscuredText(seed=seed, intensity=intensity)
     result_column=prompts_column.copy()
