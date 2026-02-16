@@ -400,6 +400,20 @@ if __name__=='__main__':
         is_unsafe=False
     )
     akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=13000)].sample(1500)
+    self_generate_fpc_prompts_dataset = complete_process_loading_dataset(
+        path_to_dataset="/content/drive/MyDrive/prompts_series_from_llm.csv",
+        source_type='csv',
+        prompt_column='prompt',
+        print_info=True,
+        dataset_name='self_generate_fpc_prompts_dataset',
+        different_prompt_category=False,
+        is_unsafe=False,
+        is_clasteresation=True,
+        nested_prompt_column='prompt',
+        n_samples=5,
+        n_first_words=5
+
+    )
     dataset_list = [
         Prompt_Injection_Malignant_dataset,
         prompt_injection_suffix_attack_adv_prompts_dataset,
@@ -419,7 +433,8 @@ if __name__=='__main__':
         tatsu_lab_alpaca,
         akoksal_LongForm,
         allenai_wildguardmix_train,
-        allenai_wildguardmix_test
+        allenai_wildguardmix_test,
+        self_generate_fpc_prompts_dataset
     ]
 
     final_data=pd.concat(dataset_list)
