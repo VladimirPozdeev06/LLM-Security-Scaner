@@ -208,7 +208,7 @@ def apply_obscured_transformation(prompts_column:pd.Series,
                                                                       'numbers_text'
 ],
                                   number_transformed_prompts_by_category:int=10,seed:int=17,intensity:float=0.5):
-    number_total_transformed_prompts=number_transformed_prompts_by_category*len(prompts_column)
+    number_total_transformed_prompts=number_transformed_prompts_by_category*len(transformation_function_list)
     obfuscator = ObscuredText(seed=seed, intensity=intensity)
     result_column=prompts_column.copy()
     index_to_transform=random.sample(range(len(prompts_column)), number_total_transformed_prompts)

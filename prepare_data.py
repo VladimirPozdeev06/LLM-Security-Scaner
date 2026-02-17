@@ -43,7 +43,9 @@ def change_dataset_column_to_necessary_form(dataset:Dataset,
                                             different_prompt_category:bool=False,
                                             is_unsafe:bool=None,
                                             category_column:str=None,
-                                            unsafe_prompt_category:Union[str,int]=None)->pd.DataFrame:
+                                            unsafe_prompt_category:Union[str,int]=None,
+                                            is_drop_nan:bool=False,
+                                            column_to_drop_nan:str=None)->pd.DataFrame:
     dataset=dataset.to_pandas()
     dataset=dataset.rename(columns={prompt_column:'prompt'})
     dataset['prompt']=dataset['prompt'].apply(clean_prompt_text)
@@ -53,6 +55,8 @@ def change_dataset_column_to_necessary_form(dataset:Dataset,
         dataset['is_unsafe']=int(is_unsafe)
 
     dataset=dataset.dropna(subset=['prompt'])
+    if is_drop_nan:
+        dataset = dataset.dropna(subset=[column_to_drop_nan])
     dataset=dataset[['prompt','is_unsafe']]
     return dataset
 
@@ -107,6 +111,8 @@ def complete_process_loading_dataset(path_to_dataset:str,
                  n_first_words:int=5,
                  list_categories:list=None,
                  target_category_column:str=None,
+                 is_drop_nan:bool=False,
+                 column_to_drop_nan:str=None
                                      )->pd.DataFrame:
     data=load_dataset_from_source(path_to_dataset=path_to_dataset,
                                   source_type=source_type,
@@ -356,7 +362,11 @@ if __name__=='__main__':
         prompt_column='prompt',
         different_prompt_category=True,
         category_column='prompt_harm_label',
-        unsafe_prompt_category='harmful'
+        unsafe_prompt_category='harmful',
+        is_clasteresation=True,
+        nested_prompt_column='prompt',
+        n_samples=1,
+        n_first_words=5,
     )
     print('allenai_wildguardmix_train:')
     print(allenai_wildguardmix_train.info())
@@ -371,7 +381,13 @@ if __name__=='__main__':
         prompt_column='prompt',
         different_prompt_category=True,
         category_column='prompt_harm_label',
-        unsafe_prompt_category='harmful'
+        unsafe_prompt_category='harmful',
+        is_clasteresation=True,
+        nested_prompt_column='prompt',
+        n_samples=1,
+        n_first_words=5,
+        is_drop_nan=True,
+        column_to_drop_nan='response'
     )
     print('allenai_wildguardmix_test:')
     print(allenai_wildguardmix_test.info())
@@ -384,7 +400,9 @@ if __name__=='__main__':
         print_info=True,
         dataset_name='tatsu_lab_alpaca',
         different_prompt_category=False,
-        is_unsafe=False
+        is_unsafe=False,
+        is_drop_nan=True,
+        column_to_drop_nan='response'
     ).sample(6000)
     print('tatsu_lab_alpaca:')
     print(tatsu_lab_alpaca.info())
@@ -401,7 +419,7 @@ if __name__=='__main__':
     )
     akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=13000)].sample(1500)
     self_generate_fpc_prompts_dataset = complete_process_loading_dataset(
-        path_to_dataset="/content/drive/MyDrive/prompts_series_from_llm.csv",
+        path_to_dataset="prompts_series_from_llm.csv",
         source_type='csv',
         prompt_column='prompt',
         print_info=True,
