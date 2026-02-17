@@ -121,7 +121,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                   split=split,
                                   print_info=print_info)
     if is_special_cleaning:
-        data=category_cleaning(data.to_pandas())
+        data=category_cleaning(data.to_pandas(),list_excluded_categories=list_categories,target_col=target_category_column,)
     if is_clasteresation:
         data=clasteresation_nested_prompts(data=data.to_pandas(),
                                            nested_prompt_column=nested_prompt_column,
@@ -133,7 +133,9 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  different_prompt_category=different_prompt_category,
                                                  is_unsafe=is_unsafe,
                                                  category_column=category_column,
-                                                 unsafe_prompt_category=unsafe_prompt_category)
+                                                 unsafe_prompt_category=unsafe_prompt_category,
+                                                 is_drop_nan=is_drop_nan,
+                                                 column_to_drop_nan=column_to_drop_nan)
 
     data=data.drop_duplicates(subset=['prompt'])
     data['from_dataset']=f'{dataset_name}'
@@ -367,6 +369,8 @@ if __name__=='__main__':
         nested_prompt_column='prompt',
         n_samples=1,
         n_first_words=5,
+        is_drop_nan=True,
+        column_to_drop_nan='response'
     )
     print('allenai_wildguardmix_train:')
     print(allenai_wildguardmix_train.info())
@@ -387,7 +391,7 @@ if __name__=='__main__':
         n_samples=1,
         n_first_words=5,
         is_drop_nan=True,
-        column_to_drop_nan='response'
+        column_to_drop_nan='response',
     )
     print('allenai_wildguardmix_test:')
     print(allenai_wildguardmix_test.info())
@@ -400,9 +404,8 @@ if __name__=='__main__':
         print_info=True,
         dataset_name='tatsu_lab_alpaca',
         different_prompt_category=False,
-        is_unsafe=False,
-        is_drop_nan=True,
-        column_to_drop_nan='response'
+        is_unsafe=False
+
     ).sample(6000)
     print('tatsu_lab_alpaca:')
     print(tatsu_lab_alpaca.info())
