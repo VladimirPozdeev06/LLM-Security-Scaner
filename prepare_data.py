@@ -5,6 +5,7 @@ import kagglehub
 from kagglehub import KaggleDatasetAdapter
 from typing import Literal,Union
 import re
+from langdetect import detect, detect_langs, DetectorFactory
 from dotenv import load_dotenv
 load_dotenv()
 from TextSpecialChanges import apply_obscured_transformation
@@ -91,6 +92,17 @@ def clasteresation_nested_prompts(data:pd.DataFrame,nested_prompt_column:str,pro
     data=data[data['count']>=n_samples]
     data_sample=data.groupby('first_words').apply(lambda x:x.sample(n_samples)).reset_index(drop=True)
     return Dataset.from_pandas(data_sample)
+def detect_english_text(text:str,min_confidence:float):
+    DetectorFactory.seed = 0
+    if len(text.strip()) <=3:
+        return False
+    langs=detect_langs(text)
+    for lang in langs:
+        if lang.lang=='en' and lang.prob>=min_confidence:
+            return True
+    return False
+
+
 def complete_process_loading_dataset(path_to_dataset:str,
                  source_type:Literal['csv','kaggle','Hugging Face'],
                  prompt_column: str,
@@ -112,7 +124,9 @@ def complete_process_loading_dataset(path_to_dataset:str,
                  list_categories:list=None,
                  target_category_column:str=None,
                  is_drop_nan:bool=False,
-                 column_to_drop_nan:str=None
+                 column_to_drop_nan:str=None,
+                 is_detect_english_texts:bool=False,
+                 min_confidence:float=0.95
                                      )->pd.DataFrame:
     data=load_dataset_from_source(path_to_dataset=path_to_dataset,
                                   source_type=source_type,
@@ -128,6 +142,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                            prompt_column=prompt_column,
                                            n_samples=n_samples,
                                            n_first_words=n_first_words)
+
     data=change_dataset_column_to_necessary_form(dataset=data,
                                                  prompt_column=prompt_column,
                                                  different_prompt_category=different_prompt_category,
@@ -138,6 +153,8 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  column_to_drop_nan=column_to_drop_nan)
 
     data=data.drop_duplicates(subset=['prompt'])
+    if is_detect_english_texts:
+        data=data[data['prompt'].apply(lambda x:detect_english_text(x,min_confidence=min_confidence))]
     data['from_dataset']=f'{dataset_name}'
     return data
 
@@ -151,7 +168,8 @@ if __name__=='__main__':
         print_info=True,
         different_prompt_category=True,
         category_column='category',
-        unsafe_prompt_category='jailbreak'
+        unsafe_prompt_category='jailbreak',
+        is_detect_english_texts=True,
     )
     print(Prompt_Injection_Malignant_dataset.info())
 
@@ -163,7 +181,8 @@ if __name__=='__main__':
 
         print_info=True,
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print(prompt_injection_suffix_attack_adv_prompts_dataset.info())
 
@@ -175,7 +194,8 @@ if __name__=='__main__':
 
         print_info=True,
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print(prompt_injection_suffix_attack_viccuna_prompts_dataset.info())
 
@@ -187,7 +207,8 @@ if __name__=='__main__':
 
         print_info=True,
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print(prompt_injection_suffix_in_the_wild_forbidden_question_set_df_dataset.info())
 
@@ -199,7 +220,8 @@ if __name__=='__main__':
 
         print_info=True,
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print(prompt_injection_suffix_in_the_wild_jailbreak_prompts_dataset.info())
 
@@ -213,7 +235,8 @@ if __name__=='__main__':
         print_info=True,
         different_prompt_category=True,
         category_column='label',
-        unsafe_prompt_category=1
+        unsafe_prompt_category=1,
+        is_detect_english_texts=True,
     )
     print('train_deepset_prompt_injections_dataset:')
     print(train_deepset_prompt_injections_dataset.info())
@@ -228,7 +251,8 @@ if __name__=='__main__':
         print_info=True,
         different_prompt_category=True,
         category_column='label',
-        unsafe_prompt_category=1
+        unsafe_prompt_category=1,
+        is_detect_english_texts=True,
     )
     print('test_deepset_prompt_injections_dataset:')
     print(test_deepset_prompt_injections_dataset.info())
@@ -242,7 +266,8 @@ if __name__=='__main__':
         dataset_name='JailbreakBench_JBB_Behaviors',
         prompt_column='prompt',
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print('JailbreakBench_JBB_Behaviors_dataset:')
     print(JailbreakBench_JBB_Behaviors_dataset.info())
@@ -255,7 +280,8 @@ if __name__=='__main__':
         dataset_name='LLM_LAT_harmful',
         prompt_column='prompt',
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
     )
     print('LLM_LAT_harmful_dataset:')
     print(LLM_LAT_harmful_dataset.info())
@@ -284,7 +310,8 @@ if __name__=='__main__':
         print_info=True,
         different_prompt_category=True,
         category_column='type',
-        unsafe_prompt_category='jailbreak'
+        unsafe_prompt_category='jailbreak',
+        is_detect_english_texts=True,
     )
     print('jackhhao_jailbreak_classification_dataset_train:')
     print(jackhhao_jailbreak_classification_dataset_train.info())
@@ -299,7 +326,8 @@ if __name__=='__main__':
         print_info=True,
         different_prompt_category=True,
         category_column='type',
-        unsafe_prompt_category='jailbreak'
+        unsafe_prompt_category='jailbreak',
+        is_detect_english_texts=True,
     )
     print('jackhhao_jailbreak_classification_dataset_test:')
     print(jackhhao_jailbreak_classification_dataset_test.info())
@@ -312,7 +340,8 @@ if __name__=='__main__':
         dataset_name='Deep1994_ReNeLLM_Jailbreak',
         prompt_column='original_harm_behavior',
         different_prompt_category=False,
-        is_unsafe=True
+        is_unsafe=True,
+        is_detect_english_texts=True,
 
     )
     print('Deep1994_ReNeLLM_Jailbreak_dataset:')
@@ -330,7 +359,8 @@ if __name__=='__main__':
         is_clasteresation=True,
         nested_prompt_column='Prompt',
         n_samples=10,
-        n_first_words=5
+        n_first_words=5,
+        is_detect_english_texts=True,
 
     )
     print('prompt_injection_suffix_in_the_wild_forbidden_question_set_with_prompts_dataset:')
@@ -349,7 +379,8 @@ if __name__=='__main__':
         is_clasteresation=True,
         nested_prompt_column='jailbreak_query',
         n_samples=3,
-        n_first_words=5
+        n_first_words=5,
+        is_detect_english_texts=True,
     )
     print('JailbreakV_28K_dataset:')
     print(JailbreakV_28K_dataset.info())
@@ -369,8 +400,9 @@ if __name__=='__main__':
         nested_prompt_column='prompt',
         n_samples=1,
         n_first_words=5,
-        is_drop_nan=True,
-        column_to_drop_nan='response'
+        #is_drop_nan=True,
+        column_to_drop_nan='response',
+        is_detect_english_texts=True,
     )
     print('allenai_wildguardmix_train:')
     print(allenai_wildguardmix_train.info())
@@ -392,6 +424,7 @@ if __name__=='__main__':
         n_first_words=5,
         is_drop_nan=True,
         column_to_drop_nan='response',
+        is_detect_english_texts=True
     )
     print('allenai_wildguardmix_test:')
     print(allenai_wildguardmix_test.info())
@@ -404,7 +437,8 @@ if __name__=='__main__':
         print_info=True,
         dataset_name='tatsu_lab_alpaca',
         different_prompt_category=False,
-        is_unsafe=False
+        is_unsafe=False,
+        is_detect_english_texts=True
 
     ).sample(6000)
     print('tatsu_lab_alpaca:')
