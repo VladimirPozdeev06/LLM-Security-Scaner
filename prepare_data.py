@@ -33,13 +33,13 @@ def load_dataset_from_source(path_to_dataset:str,
         dataset=load_dataset(path_to_dataset,name=name,split=split)
     if print_info:
         print('dataset information: ',dataset)
-    return dataset
+    return dataset.to_pandas()
 def clean_prompt_text(text:str)->str:
 
     text=text.strip()
     text=re.sub(r'\s+',' ',text)
     return text
-def change_dataset_column_to_necessary_form(dataset:Dataset,
+def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
                                             prompt_column:str,
                                             different_prompt_category:bool=False,
                                             is_unsafe:bool=None,
@@ -47,7 +47,7 @@ def change_dataset_column_to_necessary_form(dataset:Dataset,
                                             unsafe_prompt_category:Union[str,int]=None,
                                             is_drop_nan:bool=False,
                                             column_to_drop_nan:str=None)->pd.DataFrame:
-    dataset=dataset.to_pandas()
+
     dataset=dataset.rename(columns={prompt_column:'prompt'})
     dataset['prompt']=dataset['prompt'].apply(clean_prompt_text)
     if different_prompt_category:
@@ -81,7 +81,7 @@ def category_cleaning(data:pd.DataFrame,
             [short_data, temp],
             ignore_index=True
         )
-    return Dataset.from_pandas(short_data)
+    return short_data
 
 def clasteresation_nested_prompts(data:pd.DataFrame,nested_prompt_column:str,prompt_column:str,n_samples:int,n_first_words:int)->Dataset:
     data[nested_prompt_column]=np.where(data[nested_prompt_column].str.contains('image'),data[prompt_column],data[nested_prompt_column])
@@ -89,7 +89,7 @@ def clasteresation_nested_prompts(data:pd.DataFrame,nested_prompt_column:str,pro
     data['count']=data.groupby('first_words')['first_words'].transform('count')
     data=data[data['count']>=n_samples]
     data_sample=data.groupby('first_words').apply(lambda x:x.sample(n_samples)).reset_index(drop=True)
-    return Dataset.from_pandas(data_sample)
+    return data_sample
 def detect_english_text(text:str,min_confidence:float):
     DetectorFactory.seed = 0
     if len(text.strip()) <=3:
@@ -137,9 +137,9 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                   split=split,
                                   print_info=print_info)
     if is_special_cleaning:
-        data=category_cleaning(data.to_pandas(),list_excluded_categories=list_categories,target_col=target_category_column,)
+        data=category_cleaning(data,list_excluded_categories=list_categories,target_col=target_category_column,)
     if is_clasteresation:
-        data=clasteresation_nested_prompts(data=data.to_pandas(),
+        data=clasteresation_nested_prompts(data=data,
                                            nested_prompt_column=nested_prompt_column,
                                            prompt_column=prompt_column,
                                            n_samples=n_samples,
