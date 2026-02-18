@@ -5,7 +5,7 @@ import kagglehub
 from kagglehub import KaggleDatasetAdapter
 from typing import Literal,Union
 import re
-from langdetect import detect, detect_langs, DetectorFactory
+from langdetect import  detect_langs, DetectorFactory,LangDetectException
 from dotenv import load_dotenv
 load_dotenv()
 from TextSpecialChanges import apply_obscured_transformation
@@ -62,10 +62,8 @@ def change_dataset_column_to_necessary_form(dataset:Dataset,
     return dataset
 
 def category_cleaning(data:pd.DataFrame,
-                      list_excluded_categories:list=['TextFooler','Bert-Attack','BAE','PWWS',
-                                                     'TextBugger','Deletion Characters','Zero Width',
-                                                     'Alzantot','Pruthi'],
-                      target_col:str='attack_name'
+                      list_excluded_categories:list,
+                      target_col:str
                       )->Dataset:
     data=data[~data[target_col].isin(list_excluded_categories)]
     data=data.reset_index(drop=True)
@@ -96,11 +94,15 @@ def detect_english_text(text:str,min_confidence:float):
     DetectorFactory.seed = 0
     if len(text.strip()) <=3:
         return False
-    langs=detect_langs(text)
-    for lang in langs:
-        if lang.lang=='en' and lang.prob>=min_confidence:
-            return True
-    return False
+    try:
+        langs=detect_langs(text)
+        for lang in langs:
+            if lang.lang=='en' and lang.prob>=min_confidence:
+                return True
+        return False
+    except LangDetectException as e:
+        return False
+
 
 
 def complete_process_loading_dataset(path_to_dataset:str,
@@ -295,7 +297,11 @@ if __name__=='__main__':
         prompt_column='modified_sample',
         different_prompt_category=False,
         is_unsafe=True,
-        is_special_cleaning=True
+        is_special_cleaning=True,
+        list_categories=['TextFooler','Bert-Attack','BAE','PWWS',
+                                                     'TextBugger','Deletion Characters','Zero Width',
+                                                     'Alzantot','Pruthi'],
+        target_category_column='attack_name'
     )
     print('Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset:')
     print(Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset.info())
@@ -400,7 +406,7 @@ if __name__=='__main__':
         nested_prompt_column='prompt',
         n_samples=1,
         n_first_words=5,
-        #is_drop_nan=True,
+        is_drop_nan=True,
         column_to_drop_nan='response',
         is_detect_english_texts=True,
     )
