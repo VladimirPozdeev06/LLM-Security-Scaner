@@ -469,7 +469,7 @@ if __name__=='__main__':
     )
     print('akoksal_LongForm:')
     print(akoksal_LongForm.info())
-    akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=13000)].sample(1500)
+    akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=50000)].sample(1500)
     self_generate_fpc_prompts_dataset = complete_process_loading_dataset(
         path_to_dataset="prompts_series_from_llm.csv",
         source_type='csv',
