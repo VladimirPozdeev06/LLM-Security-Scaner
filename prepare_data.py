@@ -128,7 +128,9 @@ def complete_process_loading_dataset(path_to_dataset:str,
                  is_drop_nan:bool=False,
                  column_to_drop_nan:str=None,
                  is_detect_english_texts:bool=False,
-                 min_confidence:float=0.95
+                 min_confidence:float=0.95,
+                 is_n_samples_split:bool=False,
+                 n_samples_split:int=6000
                                      )->pd.DataFrame:
     data=load_dataset_from_source(path_to_dataset=path_to_dataset,
                                   source_type=source_type,
@@ -155,6 +157,8 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  column_to_drop_nan=column_to_drop_nan)
 
     data=data.drop_duplicates(subset=['prompt'])
+    if is_n_samples_split:
+      data=data.head(n_samples_split)
     if is_detect_english_texts:
         data=data[data['prompt'].apply(lambda x:detect_english_text(x,min_confidence=min_confidence))]
     data['from_dataset']=f'{dataset_name}'
@@ -299,8 +303,8 @@ if __name__=='__main__':
         is_unsafe=True,
         is_special_cleaning=True,
         list_categories=['TextFooler','Bert-Attack','BAE','PWWS',
-                                                     'TextBugger','Deletion Characters','Zero Width',
-                                                     'Alzantot','Pruthi'],
+                                                    'Zero Width',
+                                                     'Alzantot','Pruthi','Emoji Smuggling','Unicode Tags Smuggling'],
         target_category_column='attack_name'
     )
     print('Mindgard_evaded_prompt_injection_and_jailbreak_samples_dataset:')
@@ -444,9 +448,11 @@ if __name__=='__main__':
         dataset_name='tatsu_lab_alpaca',
         different_prompt_category=False,
         is_unsafe=False,
-        is_detect_english_texts=True
+        is_detect_english_texts=True,
+        is_n_samples_split=True,
+        n_samples_split=6500
 
-    ).sample(6000)
+    )
     print('tatsu_lab_alpaca:')
     print(tatsu_lab_alpaca.info())
 
@@ -458,8 +464,11 @@ if __name__=='__main__':
         print_info=True,
         dataset_name='akoksal_LongForm',
         different_prompt_category=False,
-        is_unsafe=False
+        is_unsafe=False,
+        n_samples_split=1600
     )
+    print('akoksal_LongForm:')
+    print(akoksal_LongForm.info())
     akoksal_LongForm=akoksal_LongForm[(akoksal_LongForm['prompt'].str.len()>=1000) & (akoksal_LongForm['prompt'].str.len()<=13000)].sample(1500)
     self_generate_fpc_prompts_dataset = complete_process_loading_dataset(
         path_to_dataset="prompts_series_from_llm.csv",
@@ -472,9 +481,13 @@ if __name__=='__main__':
         is_clasteresation=True,
         nested_prompt_column='prompt',
         n_samples=5,
-        n_first_words=5
+        n_first_words=5,
 
-    )
+
+      )
+    print('self_generate_fpc_prompts_dataset:')
+    print(self_generate_fpc_prompts_dataset.info())
+
     dataset_list = [
         Prompt_Injection_Malignant_dataset,
         prompt_injection_suffix_attack_adv_prompts_dataset,
@@ -500,6 +513,7 @@ if __name__=='__main__':
 
     final_data=pd.concat(dataset_list)
     final_data = final_data.drop_duplicates(subset=['prompt'])
-    final_data['prompt']=apply_obscured_transformation(final_data['prompt'])
+    final_data.loc[final_data['is_unsafe']==0,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe']==0]['prompt'])
+    final_data.loc[final_data['is_unsafe']==1,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe']==1]['prompt'],number_transformed_prompts_by_category=8)
     print(final_data.info())
     print(final_data['is_unsafe'].value_counts())
