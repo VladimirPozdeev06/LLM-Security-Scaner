@@ -46,9 +46,8 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
                                             category_column:str=None,
                                             unsafe_prompt_category:Union[str,int]=None,
                                             is_drop_nan:bool=False,
-                                            column_to_drop_nan:str=None,
-                                            add_column_to_output:bool=False,
-                                            list_column_add_to_output:list=None)->pd.DataFrame:
+                                            column_to_drop_nan:str=None
+                          )->pd.DataFrame:
 
     dataset=dataset.rename(columns={prompt_column:'prompt'})
     dataset['prompt']=dataset['prompt'].apply(clean_prompt_text)
@@ -60,10 +59,8 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
     dataset=dataset.dropna(subset=['prompt'])
     if is_drop_nan:
         dataset = dataset.dropna(subset=[column_to_drop_nan])
-    if add_column_to_output:
-        dataset = dataset[['prompt', 'is_unsafe']+list_column_add_to_output]
-    else:
-        dataset=dataset[['prompt','is_unsafe']]
+
+
     return dataset
 
 def category_cleaning(data:pd.DataFrame,
@@ -160,7 +157,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  unsafe_prompt_category=unsafe_prompt_category,
                                                  is_drop_nan=is_drop_nan,
                                                  column_to_drop_nan=column_to_drop_nan)
-
+    data = data[['prompt', 'is_unsafe']]
     data=data.drop_duplicates(subset=['prompt'])
     if is_n_samples_split:
       data=data.head(n_samples_split)
