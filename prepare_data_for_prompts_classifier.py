@@ -40,7 +40,9 @@ def clean_prompt_text(text:str)->str:
     text=re.sub(r'\s+',' ',text)
     return text
 def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
+
                                             prompt_column:str,
+                                            name_column_for_rename:str='prompt',
                                             different_prompt_category:bool=False,
                                             is_unsafe:bool=None,
                                             category_column:str=None,
@@ -49,12 +51,12 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
                                             column_to_drop_nan:str=None
                           )->pd.DataFrame:
 
-    dataset=dataset.rename(columns={prompt_column:'prompt'})
-    dataset['prompt']=dataset['prompt'].apply(clean_prompt_text)
+    dataset=dataset.rename(columns={prompt_column:name_column_for_rename})
+    dataset[f'{name_column_for_rename}']=dataset[f'{name_column_for_rename}'].apply(clean_prompt_text)
     if different_prompt_category:
-        dataset['is_unsafe']=np.where(dataset[category_column]==unsafe_prompt_category,1,0)
+        dataset[f'is_unsafe_{name_column_for_rename}']=np.where(dataset[category_column]==unsafe_prompt_category,1,0)
     else:
-        dataset['is_unsafe']=int(is_unsafe)
+        dataset[f'is_unsafe_{name_column_for_rename}']=int(is_unsafe)
 
     dataset=dataset.dropna(subset=['prompt'])
     if is_drop_nan:
@@ -157,7 +159,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  unsafe_prompt_category=unsafe_prompt_category,
                                                  is_drop_nan=is_drop_nan,
                                                  column_to_drop_nan=column_to_drop_nan)
-    data = data[['prompt', 'is_unsafe']]
+    data = data[['prompt', 'is_unsafe_prompts']]
     data=data.drop_duplicates(subset=['prompt'])
     if is_n_samples_split:
       data=data.head(n_samples_split)
