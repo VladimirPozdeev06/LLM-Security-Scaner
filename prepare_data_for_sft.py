@@ -80,10 +80,10 @@ def split_dataset_on_response(data:pd.DataFrame,
                               column_to_split_dataset_on_response:List[List[str]]=None,
                               response_column:str='response',
                               is_drop_nan:bool=False,
-                              columns_to_drop_nan:list=None,
+                              columns_to_drop_nan:Union[list,List[List[str]]]=None,
                               different_response_category:bool=False,
-                              is_unsafe: bool = None,
-                              category_column: str = None,
+                              is_unsafe: Union[bool,List[bool]] = None,
+                              category_column:Union[list, str] = None,
                               unsafe_response_category: Union[str, int] = None
                               )->Union[pd.DataFrame,Tuple[pd.DataFrame,...]]:
     if number_of_response in (0,None):
@@ -109,7 +109,7 @@ def split_dataset_on_response(data:pd.DataFrame,
     if number_of_response>=2:
 
         data_list = []
-        for columns in column_to_split_dataset_on_response:
+        for i,columns in enumerate(column_to_split_dataset_on_response):
            _data=transform_dataset_column_response(data=data[columns],
                                                    response_column=response_column,
                                                    is_drop_nan=is_drop_nan,
@@ -121,7 +121,7 @@ def split_dataset_on_response(data:pd.DataFrame,
            data_list.append(_data)
            return tuple(data_list)
 if __name__=='__main__':
-    ds=process_cleaning_dataset_to_SFT(path_to_dataset="allenai/wildguardmix",
+    '''allenai_wildguardmix_test=process_cleaning_dataset_to_SFT(path_to_dataset="allenai/wildguardmix",
         source_type='Hugging Face',
         name='wildguardtest',
         split='test',
@@ -138,12 +138,76 @@ if __name__=='__main__':
         is_detect_english_texts=True,
 
         )
-    ds=split_dataset_on_response(data=ds,
+    allenai_wildguardmix_test=split_dataset_on_response(data=allenai_wildguardmix_test,
                                  number_of_response=1,
                                  response_column='response',
                                  is_drop_nan=True,
-                                 columns_to_drop_nan=['response','prompt_harm_label'],
+                                 columns_to_drop_nan=['response','prompt_harm_label','response_harm_label'],
                                  different_response_category=True,
-                                 category_column='prompt_harm_label',
+                                 category_column='response_harm_label',
                                  unsafe_response_category='harmful')
-    print(ds.info())
+
+    print('allenai_wildguardmix_test:')
+    print(allenai_wildguardmix_test.info())
+
+    allenai_wildguardmix_train = process_cleaning_dataset_to_SFT(path_to_dataset="allenai/wildguardmix",
+                                                                source_type='Hugging Face',
+                                                                name='wildguardtrain',
+                                                                split='train',
+                                                                print_info=True,
+                                                                dataset_name='allenai_wildguardmix',
+                                                                prompt_column='prompt',
+                                                                different_prompt_category=True,
+                                                                category_column='prompt_harm_label',
+                                                                unsafe_prompt_category='harmful',
+                                                                is_clasteresation=True,
+                                                                nested_prompt_column='prompt',
+                                                                n_samples=1,
+                                                                n_first_words=5,
+                                                                is_detect_english_texts=True,
+
+                                                                )
+    allenai_wildguardmix_train = split_dataset_on_response(data=allenai_wildguardmix_train,
+                                                          number_of_response=1,
+                                                          response_column='response',
+                                                          is_drop_nan=True,
+                                                          columns_to_drop_nan=['response', 'prompt_harm_label',
+                                                                               'response_harm_label'],
+                                                          different_response_category=True,
+                                                          category_column='response_harm_label',
+                                                          unsafe_response_category='harmful')
+
+    print('allenai_wildguardmix_train:')
+    print(allenai_wildguardmix_train.info())'''
+
+    PKU_Alignment_PKU_SafeRLHF_train=process_cleaning_dataset_to_SFT(path_to_dataset="PKU-Alignment/PKU-SafeRLHF",
+                                                               source_type='Hugging Face',
+                                                               name='default',
+                                                               split='train',
+                                                               print_info=True,
+                                                               dataset_name='PKU-SafeRLHF',
+                                                               prompt_column='prompt',
+                                                               different_prompt_category=False,
+                                                               is_unsafe=False,
+                                                               is_clasteresation=True,
+                                                               nested_prompt_column='prompt',
+                                                               n_samples=1,
+                                                               n_first_words=5,
+                                                               is_detect_english_texts=True
+
+                                                               )
+    PKU_Alignment_PKU_SafeRLHF_train_response_0,PKU_Alignment_PKU_SafeRLHF_train_response_1=split_dataset_on_response(data=PKU_Alignment_PKU_SafeRLHF_train,
+                                                                                                                      number_of_response=2,
+                                                                                                                      column_to_split_dataset_on_response=[['prompt','response_0','is_response_0_safe'],
+                                                                                                                                                           ['prompt','response_1','is_response_1_safe']],
+                                                                                                                      is_drop_nan=True,
+                                                                                                                      columns_to_drop_nan=[['prompt','response_0','is_response_0_safe'],
+                                                                                                                                           ['prompt','response_1','is_response_1_safe']],
+                                                                                                                      different_response_category=True,
+                                                                                                                      category_column=['is_response_0_safe','is_response_1_safe'],
+                                                                                                                      unsafe_response_category='false'
+                                                                                                                      )
+    print('PKU_Alignment_PKU_SafeRLHF_train_response_0:')
+    print(PKU_Alignment_PKU_SafeRLHF_train_response_0.info())
+    print('PKU_Alignment_PKU_SafeRLHF_train_response_1:')
+    print(PKU_Alignment_PKU_SafeRLHF_train_response_1.info())
