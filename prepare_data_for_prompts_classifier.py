@@ -48,7 +48,7 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
                                             category_column:str=None,
                                             unsafe_prompt_category:Union[str,int]=None,
                                             is_drop_nan:bool=False,
-                                            column_to_drop_nan:str=None
+                                            columns_to_drop_nan:list=None
                           )->pd.DataFrame:
 
     dataset=dataset.rename(columns={prompt_column:name_column_for_rename})
@@ -62,7 +62,7 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
 
 
     if is_drop_nan:
-        dataset = dataset.dropna(subset=[column_to_drop_nan])
+        dataset = dataset.dropna(subset=columns_to_drop_nan)
 
 
     return dataset
