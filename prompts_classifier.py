@@ -3,8 +3,10 @@ from sklearn.model_selection import train_test_split
 from datasets import Dataset
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, recall_score, precision_score
-
-
+from transformers import  AutoTokenizer, AutoModelForSequenceClassification
+import torch
+from tqdm import tqdm
+from typing import List
 def split_data(data: pd.DataFrame):
     data = data.rename(columns={'is_unsafe': 'label', 'prompt': 'text'})
     train_data, test_data = train_test_split(data,
@@ -44,3 +46,38 @@ def compute_metrics(pred) -> dict:
 
         'precision': precision
     }
+
+def load_pretrained_model(path_to_model:str,device:str='cpu'):
+    tokenizer=AutoTokenizer.from_pretrained(path_to_model)
+    model=AutoModelForSequenceClassification.from_pretrained(path_to_model)
+    model.eval()
+    model.to(device)
+    return model, tokenizer
+
+def predict_batch(prompts:List,model,tokenizer,batch_size:int=32,device:str='cpu'):
+    results=[]
+    for i in tqdm(range(0,len(prompts),batch_size)):
+        prompt_batch=prompts[i:i+batch_size]
+        ##обавить **kwargs в tokenize_function
+        inputs=tokenizer(
+            prompt_batch,
+            padding=True,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt"
+        ).to(device)
+        with torch.no_grad():
+            outputs=model(**inputs)
+            logits=outputs.logits
+            probabilities=torch.softmax(logits,dim=1)
+            predictions=torch.argmax(logits,dim=1)
+
+        for j,text_prompt in  enumerate(prompt_batch):
+            is_unsafe=predictions[j].item()
+            confidence=probabilities[j][is_unsafe].item()
+            results.append({
+                'prompt': text_prompt,
+                'is_unsafe_prompt':is_unsafe,
+                'confidence':confidence
+            })
+    return results
