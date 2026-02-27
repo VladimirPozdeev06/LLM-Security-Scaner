@@ -59,7 +59,7 @@ def process_cleaning_dataset_to_SFT(path_to_dataset:str,
 def transform_dataset_column_response(data:pd.DataFrame,
                                       number_of_responses:int,
                                       column_to_split_dataset_on_response:List[str],
-                                      response_column:str,
+                                      response_column:str=None,
                                       is_drop_nan:bool=False,
                                       columns_to_drop_nan:list=[],
                                       different_response_category:bool=False,
@@ -287,3 +287,25 @@ if __name__=='__main__':
     )
     print('LLM_LAT_harmful_dataset_rejected:')
     print(LLM_LAT_harmful_dataset_rejected.info())
+    errors=process_cleaning_dataset_to_SFT(path_to_dataset="errors_prompt_classifier.csv",
+                                                               source_type='csv',
+
+
+                                                               print_info=True,
+                                                               dataset_name='errors_prompt_classifier',
+                                                               prompt_column='text',
+                                                               different_prompt_category=True,
+                                                               category_column='label',
+                                                               unsafe_prompt_category=1,
+
+
+
+                                                               )
+    errors=transform_dataset_column_response(
+        data=errors,
+        number_of_responses=0,
+        column_to_split_dataset_on_response=['prompt','is_unsafe_prompt','from_dataset'],
+
+    )
+    print(errors.info())
+
