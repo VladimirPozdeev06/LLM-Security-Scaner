@@ -81,3 +81,12 @@ def predict_batch(prompts:List,model,tokenizer,batch_size:int=32,device:str='cpu
                 'confidence':confidence
             })
     return results
+
+def define_prompt_safety(data:pd.DataFrame,model,tokenizer,batch_size:int=32,device:str='cpu',prompt_column:str='prompt',min_confidence:float=None):
+    prompts=data[prompt_column].tolist()
+    results=predict_batch(prompts,model,tokenizer,batch_size,device)
+    results=pd.DataFrame(results)
+    if min_confidence is not None:
+        results=results[results['confidence']>=min_confidence]
+    data=pd.merge(data.drop(columns='is_unsafe_prompt'),results[['prompt','is_unsafe_prompt']],how='right',on='prompt')
+    return data

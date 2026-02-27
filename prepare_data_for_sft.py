@@ -3,6 +3,7 @@ from prepare_data_for_prompts_classifier import (load_dataset_from_source,
                                                  change_dataset_column_to_necessary_form,
                                                  detect_english_text,
                                                  clean_prompt_text)
+from prompts_classifier import define_prompt_safety,load_pretrained_model
 from typing import Literal, List, Tuple,Union
 import numpy as np
 import pandas as pd
@@ -70,7 +71,9 @@ def transform_dataset_column_response(data:pd.DataFrame,
 
     if number_of_responses==0:
         data['response']=np.nan
-    data=change_dataset_column_to_necessary_form(dataset=data,
+        data['is_unsafe_response']=False
+    else:
+        data=change_dataset_column_to_necessary_form(dataset=data,
                                             prompt_column=response_column,
                                             name_column_for_rename='response',
                                             is_drop_nan=is_drop_nan,
@@ -80,7 +83,7 @@ def transform_dataset_column_response(data:pd.DataFrame,
                                             category_column=category_column,
                                             unsafe_prompt_category=unsafe_response_category)
 
-    data = data.drop_duplicates(subset=['response'])
+        data = data.drop_duplicates(subset=['response'])
     return data[['prompt','is_unsafe_prompt','response','is_unsafe_response','from_dataset']]
 
 if __name__=='__main__':
@@ -164,7 +167,12 @@ if __name__=='__main__':
                                                                is_detect_english_texts=True
 
                                                                )
-
+    model, tokenizer = load_pretrained_model('prompts classifier')
+    PKU_Alignment_PKU_SafeRLHF_train = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_train, model, tokenizer,
+                                                           min_confidence=0.85)
+    print('PKU_Alignment_PKU_SafeRLHF_train:')
+    print(PKU_Alignment_PKU_SafeRLHF_train.info())
+    print(PKU_Alignment_PKU_SafeRLHF_train['is_unsafe_prompt'].value_counts())
     PKU_Alignment_PKU_SafeRLHF_train_response_0=transform_dataset_column_response(data=PKU_Alignment_PKU_SafeRLHF_train,
                                                                                 number_of_responses=2,
                                                                                 column_to_split_dataset_on_response=['prompt','is_unsafe_prompt','response_0','is_response_0_safe', 'from_dataset'],
@@ -206,7 +214,11 @@ if __name__=='__main__':
                                                                        is_detect_english_texts=True
 
                                                                        )
-    
+
+    PKU_Alignment_PKU_SafeRLHF_test = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_test, model, tokenizer, min_confidence=0.85)
+    print('PKU_Alignment_PKU_SafeRLHF_test:')
+    print(PKU_Alignment_PKU_SafeRLHF_test.info())
+    print(PKU_Alignment_PKU_SafeRLHF_test['is_unsafe_prompt'].value_counts())
     PKU_Alignment_PKU_SafeRLHF_test_response_0 = transform_dataset_column_response(
         data=PKU_Alignment_PKU_SafeRLHF_test,
         number_of_responses=2,
