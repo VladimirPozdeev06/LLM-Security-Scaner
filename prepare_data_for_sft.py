@@ -64,7 +64,7 @@ def transform_dataset_column_response(data:pd.DataFrame,
                                       different_response_category:bool=False,
                                       is_unsafe: bool = None,
                                       category_column: str = None,
-                                      unsafe_response_category: Union[str, int] = None,):
+                                      unsafe_response_category: Union[str, int,bool] = None,):
 
     data=data[column_to_split_dataset_on_response]
 
@@ -173,7 +173,7 @@ if __name__=='__main__':
                                                                                 columns_to_drop_nan=['prompt','is_response_0_safe'],
                                                                                 different_response_category=True,
                                                                                 category_column='is_response_0_safe',
-                                                                                unsafe_response_category='false')
+                                                                                unsafe_response_category=False)
     print('PKU_Alignment_PKU_SafeRLHF_train_response_0:')
     print(PKU_Alignment_PKU_SafeRLHF_train_response_0.info())
 
@@ -186,7 +186,7 @@ if __name__=='__main__':
         columns_to_drop_nan=['prompt', 'is_response_1_safe'],
         different_response_category=True,
         category_column='is_response_1_safe',
-        unsafe_response_category='false')
+        unsafe_response_category=False)
     print('PKU_Alignment_PKU_SafeRLHF_train_response_1:')
     print(PKU_Alignment_PKU_SafeRLHF_train_response_1.info())
 
@@ -216,7 +216,7 @@ if __name__=='__main__':
         columns_to_drop_nan=['prompt', 'is_response_0_safe'],
         different_response_category=True,
         category_column='is_response_0_safe',
-        unsafe_response_category='false')
+        unsafe_response_category=False)
     print('PKU_Alignment_PKU_SafeRLHF_test_response_0:')
     print(PKU_Alignment_PKU_SafeRLHF_test_response_0.info())
 
@@ -229,7 +229,7 @@ if __name__=='__main__':
         columns_to_drop_nan=['prompt', 'is_response_1_safe'],
         different_response_category=True,
         category_column='is_response_1_safe',
-        unsafe_response_category='false')
+        unsafe_response_category=False)
     print('PKU_Alignment_PKU_SafeRLHF_test_response_1:')
     print(PKU_Alignment_PKU_SafeRLHF_test_response_1.info())
 

@@ -46,7 +46,7 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
                                             different_prompt_category:bool=False,
                                             is_unsafe:bool=None,
                                             category_column:str=None,
-                                            unsafe_prompt_category:Union[str,int]=None,
+                                            unsafe_prompt_category:Union[str,int,bool]=None,
                                             is_drop_nan:bool=False,
                                             columns_to_drop_nan:list=None
                           )->pd.DataFrame:
