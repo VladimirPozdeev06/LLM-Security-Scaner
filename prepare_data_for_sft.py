@@ -301,11 +301,44 @@ if __name__=='__main__':
 
 
                                                                )
-    errors=transform_dataset_column_response(
+    errors_classifier=transform_dataset_column_response(
         data=errors,
         number_of_responses=0,
         column_to_split_dataset_on_response=['prompt','is_unsafe_prompt','from_dataset'],
 
     )
+    print('errors_classifier:')
     print(errors.info())
+
+    dataset_list = [
+
+        allenai_wildguardmix_test,
+        allenai_wildguardmix_train,
+
+
+        PKU_Alignment_PKU_SafeRLHF_train_response_0,
+        PKU_Alignment_PKU_SafeRLHF_train_response_1,
+
+
+        PKU_Alignment_PKU_SafeRLHF_test_response_0,
+        PKU_Alignment_PKU_SafeRLHF_test_response_1,
+
+
+        LLM_LAT_harmful_dataset_chosen,
+        LLM_LAT_harmful_dataset_rejected,
+
+
+        errors_classifier
+    ]
+    final_sft_data=pd.concat(dataset_list)
+    print('final_sft_data:')
+    print(final_sft_data.info())
+    final_sft_data=final_sft_data.dropna(subset=['prompt','is_unsafe_prompt','is_unsafe_response'])
+    final_sft_data=final_sft_data.drop_duplicates(subset=['prompt'])
+    final_sft_data=final_sft_data[final_sft_data['is_unsafe_response']==False]
+    print('final_sft_data:')
+    print(final_sft_data.info())
+    print(final_sft_data['is_unsafe_prompt'].value_counts())
+    print(final_sft_data['is_unsafe_response'].value_counts())
+    final_sft_data.to_csv('final_sft_data.csv',index=False)
 
