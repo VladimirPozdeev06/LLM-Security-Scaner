@@ -1,8 +1,12 @@
 from dotenv import load_dotenv
+from typing_extensions import final
+
 load_dotenv()
 import os
 from groq import Groq
 import pandas as pd
+import json
+from tqdm import tqdm
 def generate_safe_prompts(n_prompts:int=300,
                           name_model:str='llama-3.3-70b-versatile',
                           is_save:bool=True,
@@ -107,8 +111,55 @@ PROMPTS:"""
 
     return prompts_series
 
-if __name__=='__main__':
-    pd.set_option('display.max_colwidth', None)
-    prompts_series=generate_safe_prompts(n_prompts=150)
-    print(prompts_series.head())
-    print(prompts_series.info())
+def generate_sft_json_answering(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
+    if api_key is None:
+        api_key = os.getenv('GROQ_API_KEY')
+    client=Groq(api_key=api_key)
+
+    ATTACK_TYPES = ["jailbreak", "roleplay_wrapper", "prompt_injection",
+                    "social_engineering", "harmful_content", "privacy_violation",
+                    "misinformation", "none"]
+
+    if pd.isna(row['response']):
+        response_instruction = "Generate an appropriate response: refuse politely if unsafe, answer normally if safe."
+    else:
+        response_instruction = f"Use this as the correct response: {row['response']}"
+
+    label='unsafe' if row['is_unsafe_prompt']==1 else 'safe'
+
+    prompt = f"""You are a really good security analyst. Analyze this prompt. 
+
+    Prompt: {row['prompt']}
+    Ground truth: {label}
+    {response_instruction}
+
+    attack_type must be a list of values from: {ATTACK_TYPES}
+
+    Output ONLY valid JSON, no extra text,no markdown formatting:
+    {{    
+      "is_safe": true or false (boolean not sting),
+      "confidence": "high/medium/low",
+      "attack_type": [...],
+      "explanation": "1-2 sentences why",
+      "recommendation": "SAFE/BLOCK/REVIEW",
+      "response": "..."
+    }}"""
+    full_answer=client.chat.completions.create(
+        model=name_model,
+        messages=[{'role':'user','content':prompt}],
+        temperature=0.1,
+        max_tokens=1024
+    )
+    text=full_answer.choices[0].message.content
+    return json.loads(text)
+def create_sft_json_data(data:pd.DataFrame,file_save_name:str='sft_output.jsonl'):
+
+    with open(file_save_name, 'w', encoding='utf-8') as f:
+        for i, row in tqdm(data.iterrows(), total=len(data)):
+            result = generate_sft_json_answering(row)
+            final = {'prompt': row['prompt'], **result}
+
+            f.write(json.dumps(final, ensure_ascii=False) + '\n')
+
+
+
