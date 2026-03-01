@@ -7,6 +7,7 @@ from groq import Groq
 import pandas as pd
 import json
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
 def generate_safe_prompts(n_prompts:int=300,
                           name_model:str='llama-3.3-70b-versatile',
                           is_save:bool=True,
@@ -110,8 +111,29 @@ PROMPTS:"""
         prompts_series.to_csv('prompts_series_from_llm.csv',index=False,header=['prompt'])
 
     return prompts_series
+def create_response_to_prompt(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
+    if api_key is None:
+        api_key = os.getenv('GROQ_API_KEY')
+    client=Groq(api_key=api_key)
+    label = 'unsafe' if row['is_unsafe_prompt'] == 1 else 'safe'
+    prompt=f""" You are system to detect dangerous prompts and prompt injection 
+    right the safe and correct answer on my prompt. Just give me a response and do not numerate it.
+    Prompt: {row['prompt']}
+    Ground truth: {label}
+    You are system to detect dangerous prompts and prompt injection 
+    right the safe and correct answer on my prompt. Just give me a response and do not numerate it.
+    Prompt: {row['prompt']}
+    Ground truth: {label}    
+"""
+    response=client.chat.completions.create(
+        model=name_model,
+        messages=[{'role':'user','content':prompt}],
+        temperature=0.1,
+        max_tokens=512
 
-def generate_sft_json_answering(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
+    )
+    return response.choices[0].message.content
+def generate_sft_json(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
     if api_key is None:
         api_key = os.getenv('GROQ_API_KEY')
     client=Groq(api_key=api_key)
@@ -120,10 +142,7 @@ def generate_sft_json_answering(row,name_model:str='llama-3.3-70b-versatile',api
                     "social_engineering", "harmful_content", "privacy_violation",
                     "misinformation", "none"]
 
-    if pd.isna(row['response']):
-        response_instruction = "Generate an appropriate response: refuse politely if unsafe, answer normally if safe."
-    else:
-        response_instruction = f"Use this as the correct response: {row['response']}"
+
 
     label='unsafe' if row['is_unsafe_prompt']==1 else 'safe'
 
@@ -131,35 +150,41 @@ def generate_sft_json_answering(row,name_model:str='llama-3.3-70b-versatile',api
 
     Prompt: {row['prompt']}
     Ground truth: {label}
-    {response_instruction}
+
 
     attack_type must be a list of values from: {ATTACK_TYPES}
 
     Output ONLY valid JSON, no extra text,no markdown formatting:
     {{    
-      "is_safe": true or false (boolean not sting),
+ 
       "confidence": "high/medium/low",
       "attack_type": [...],
       "explanation": "1-2 sentences why",
       "recommendation": "SAFE/BLOCK/REVIEW",
-      "response": "..."
+
     }}"""
     full_answer=client.chat.completions.create(
         model=name_model,
         messages=[{'role':'user','content':prompt}],
         temperature=0.1,
-        max_tokens=1024
+        max_tokens=512
     )
     text=full_answer.choices[0].message.content
     return json.loads(text)
-def create_sft_json_data(data:pd.DataFrame,file_save_name:str='sft_output.jsonl'):
+
+
+def create_sft_json_data(data: pd.DataFrame, file_save_name: str = 'sft_output.jsonl'):
+    def process_row(args):
+        i, row = args
+        result = generate_sft_json(row)
+        return {'prompt': row['prompt'], **result}
 
     with open(file_save_name, 'w', encoding='utf-8') as f:
-        for i, row in tqdm(data.iterrows(), total=len(data)):
-            result = generate_sft_json_answering(row)
-            final = {'prompt': row['prompt'], **result}
-
-            f.write(json.dumps(final, ensure_ascii=False) + '\n')
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = {executor.submit(process_row, row): row for row in data.iterrows()}
+            for future in tqdm(as_completed(futures), total=len(data)):
+                result = future.result()
+                f.write(json.dumps(result, ensure_ascii=False) + '\n')
 
 
 
