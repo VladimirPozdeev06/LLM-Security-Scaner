@@ -4,6 +4,8 @@ from prepare_data_for_prompts_classifier import (load_dataset_from_source,
                                                  detect_english_text,
                                                  clean_prompt_text)
 from prompts_classifier import define_prompt_safety,load_pretrained_model
+from implement_LLM import create_response_to_prompt
+from tqdm import tqdm
 from typing import Literal, List, Tuple,Union
 import numpy as np
 import pandas as pd
@@ -65,13 +67,17 @@ def transform_dataset_column_response(data:pd.DataFrame,
                                       different_response_category:bool=False,
                                       is_unsafe: bool = None,
                                       category_column: str = None,
-                                      unsafe_response_category: Union[str, int,bool] = None,):
+                                      unsafe_response_category: Union[str, int,bool] = None,
+                                      generate_response:bool=False):
 
     data=data[column_to_split_dataset_on_response]
 
     if number_of_responses==0:
-        data['response']=np.nan
+        data['response']=pd.NA
         data['is_unsafe_response']=False
+        if generate_response:
+            for i, row in tqdm(data.iterrows(), total=len(data)):
+                data.loc[i, 'response'] = create_response_to_prompt(row)
     else:
         data=change_dataset_column_to_necessary_form(dataset=data,
                                             prompt_column=response_column,

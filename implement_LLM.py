@@ -1,3 +1,4 @@
+import numpy as np
 from dotenv import load_dotenv
 from typing_extensions import final
 
@@ -111,7 +112,7 @@ PROMPTS:"""
         prompts_series.to_csv('prompts_series_from_llm.csv',index=False,header=['prompt'])
 
     return prompts_series
-def create_response_to_prompt(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
+def create_response_to_prompt(row,name_model:str='llama-3.3-70b-instant',api_key:str=None):
     if api_key is None:
         api_key = os.getenv('GROQ_API_KEY')
     client=Groq(api_key=api_key)
@@ -120,10 +121,7 @@ def create_response_to_prompt(row,name_model:str='llama-3.3-70b-versatile',api_k
     right the safe and correct answer on my prompt. Just give me a response and do not numerate it.
     Prompt: {row['prompt']}
     Ground truth: {label}
-    You are system to detect dangerous prompts and prompt injection 
-    right the safe and correct answer on my prompt. Just give me a response and do not numerate it.
-    Prompt: {row['prompt']}
-    Ground truth: {label}    
+  
 """
     response=client.chat.completions.create(
         model=name_model,
@@ -160,7 +158,7 @@ def generate_sft_json(row,name_model:str='llama-3.3-70b-versatile',api_key:str=N
       "confidence": "high/medium/low",
       "attack_type": [...],
       "explanation": "1-2 sentences why",
-      "recommendation": "SAFE/BLOCK/REVIEW",
+      "recommendation": "SAFE/BLOCK/REVIEW"
 
     }}"""
     full_answer=client.chat.completions.create(
@@ -185,6 +183,7 @@ def create_sft_json_data(data: pd.DataFrame, file_save_name: str = 'sft_output.j
             for future in tqdm(as_completed(futures), total=len(data)):
                 result = future.result()
                 f.write(json.dumps(result, ensure_ascii=False) + '\n')
+
 
 
 
