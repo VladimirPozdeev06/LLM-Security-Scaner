@@ -1,7 +1,7 @@
 import numpy as np
 from dotenv import load_dotenv
 from typing_extensions import final
-
+import ollama
 load_dotenv()
 import os
 from groq import Groq
@@ -131,43 +131,34 @@ def create_response_to_prompt(row,name_model:str='llama-3.3-70b-instant',api_key
 
     )
     return response.choices[0].message.content
-def generate_sft_json(row,name_model:str='llama-3.3-70b-versatile',api_key:str=None):
-    if api_key is None:
-        api_key = os.getenv('GROQ_API_KEY')
-    client=Groq(api_key=api_key)
-
+def generate_sft_json(row, name_model: str = 'llama3.1:8b'):
     ATTACK_TYPES = ["jailbreak", "roleplay_wrapper", "prompt_injection",
                     "social_engineering", "harmful_content", "privacy_violation",
                     "misinformation", "none"]
 
-
-
-    label='unsafe' if row['is_unsafe_prompt']==1 else 'safe'
+    label = 'unsafe' if row['is_unsafe_prompt'] == 1 else 'safe'
 
     prompt = f"""You are a really good security analyst. Analyze this prompt. 
 
     Prompt: {row['prompt']}
     Ground truth: {label}
 
-
     attack_type must be a list of values from: {ATTACK_TYPES}
 
-    Output ONLY valid JSON, no extra text,no markdown formatting:
+    Output ONLY valid JSON, no extra text, no markdown formatting:
     {{    
- 
       "confidence": "high/medium/low",
       "attack_type": [...],
       "explanation": "1-2 sentences why",
       "recommendation": "SAFE/BLOCK/REVIEW"
-
     }}"""
-    full_answer=client.chat.completions.create(
+
+    response = ollama.chat(
         model=name_model,
-        messages=[{'role':'user','content':prompt}],
-        temperature=0.1,
-        max_tokens=512
+        messages=[{'role': 'user', 'content': prompt}],
+        options={'temperature': 0.1}
     )
-    text=full_answer.choices[0].message.content
+    text = response['message']['content']
     return json.loads(text)
 
 
