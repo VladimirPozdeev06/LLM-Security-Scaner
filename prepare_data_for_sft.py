@@ -339,6 +339,7 @@ if __name__=='__main__':
     final_sft_data=pd.concat(dataset_list)
     print('final_sft_data:')
     print(final_sft_data.info())
+    final_sft_data.to_csv('sft_data_with_safe_and_unsafe_prompts.csv', index=False)
     final_sft_data=final_sft_data.dropna(subset=['prompt','is_unsafe_prompt','is_unsafe_response'])
     final_sft_data=final_sft_data.drop_duplicates(subset=['prompt'])
     final_sft_data=final_sft_data[final_sft_data['is_unsafe_response']==False]
