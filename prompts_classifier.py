@@ -7,7 +7,7 @@ from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from tqdm import tqdm
 from typing import List
-def split_data(data: pd.DataFrame,text_column:str='prompt',label_column:str='is_unsafe') -> pd.DataFrame:
+def split_data(data: pd.DataFrame,text_column:str='prompt',label_column:str='is_unsafe') :
     data = data.rename(columns={text_column: 'text', label_column: 'label'})
     train_data, test_data = train_test_split(data,
                                              test_size=0.2,
