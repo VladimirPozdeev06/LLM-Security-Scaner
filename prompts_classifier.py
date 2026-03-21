@@ -54,7 +54,14 @@ def load_pretrained_model(path_to_model:str,device:str='cpu'):
     model.to(device)
     return model, tokenizer
 
-def predict_batch(prompts:List,model,tokenizer,batch_size:int=32,device:str='cpu'):
+def predict_batch(prompts:List,
+                  model,
+                  tokenizer,
+                  batch_size:int=32,
+                  device:str='cpu',
+                  target_prediction_name:str='is_unsafe_prompt',
+                  name_for_confidence_0_class:str='confidence_chosen_class',
+                  name_for_confidence_1_class:str='confidence_rejected_class'):
     results=[]
     for i in tqdm(range(0,len(prompts),batch_size)):
         prompt_batch=prompts[i:i+batch_size]
@@ -74,11 +81,13 @@ def predict_batch(prompts:List,model,tokenizer,batch_size:int=32,device:str='cpu
 
         for j,text_prompt in  enumerate(prompt_batch):
             is_unsafe=predictions[j].item()
-            confidence=probabilities[j][is_unsafe].item()
+            confidence_chosen_class=probabilities[j][0].item()
+            confidence_rejected_class = probabilities[j][1].item()
             results.append({
                 'prompt': text_prompt,
-                'is_unsafe_prompt':is_unsafe,
-                'confidence':confidence
+                target_prediction_name:is_unsafe,
+                name_for_confidence_0_class:confidence_chosen_class,
+                name_for_confidence_1_class:confidence_rejected_class
             })
     return results
 
