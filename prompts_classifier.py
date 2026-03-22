@@ -83,19 +83,33 @@ def predict_batch(prompts:List,
             is_unsafe=predictions[j].item()
             confidence_chosen_class=probabilities[j][0].item()
             confidence_rejected_class = probabilities[j][1].item()
+            predicted_class_confidence = confidence_chosen_class if is_unsafe == 0 else confidence_rejected_class
             results.append({
                 'prompt': text_prompt,
                 target_prediction_name:is_unsafe,
                 name_for_confidence_0_class:confidence_chosen_class,
-                name_for_confidence_1_class:confidence_rejected_class
+                name_for_confidence_1_class:confidence_rejected_class,
+                'predicted_class_confidence': predicted_class_confidence
             })
     return results
 
-def define_prompt_safety(data:pd.DataFrame,model,tokenizer,batch_size:int=32,device:str='cpu',prompt_column:str='prompt',min_confidence:float=None):
+def define_prompt_safety(data:pd.DataFrame,
+                         model,tokenizer,
+                         batch_size:int=32,
+                         device:str='cpu',
+                         prompt_column:str='prompt',
+                         min_confidence:float=None,max_confidence:float=1.0,
+                         save_confidence:bool=False):
     prompts=data[prompt_column].tolist()
     results=predict_batch(prompts,model,tokenizer,batch_size,device)
     results=pd.DataFrame(results)
     if min_confidence is not None:
-        results=results[results['confidence']>=min_confidence]
-    data=pd.merge(data.drop(columns='is_unsafe_prompt'),results[['prompt','is_unsafe_prompt']],how='right',on='prompt')
+        results=results[results['predicted_class_confidence'].between(min_confidence,max_confidence)]
+    if 'is_unsafe_prompt' in data.columns:
+        data=data.drop(columns='is_unsafe_prompt')
+    if save_confidence:
+        result=[['prompt','is_unsafe_prompt','predicted_class_confidence']]
+    else:
+        result=results[['prompt','is_unsafe_prompt']]
+    data=pd.merge(data,result,how='right',on='prompt')
     return data
