@@ -47,7 +47,7 @@ def compute_metrics(pred) -> dict:
         'precision': precision
     }
 
-def load_pretrained_model(path_to_model:str,device:str='cpu'):
+def load_pretrained_classification_model(path_to_model:str,device:str='cpu'):
     tokenizer=AutoTokenizer.from_pretrained(path_to_model)
     model=AutoModelForSequenceClassification.from_pretrained(path_to_model)
     model.eval()
@@ -108,7 +108,7 @@ def define_prompt_safety(data:pd.DataFrame,
     if 'is_unsafe_prompt' in data.columns:
         data=data.drop(columns='is_unsafe_prompt')
     if save_confidence:
-        result=[['prompt','is_unsafe_prompt','predicted_class_confidence']]
+        result=results[['prompt','is_unsafe_prompt','predicted_class_confidence']]
     else:
         result=results[['prompt','is_unsafe_prompt']]
     data=pd.merge(data,result,how='right',on='prompt')

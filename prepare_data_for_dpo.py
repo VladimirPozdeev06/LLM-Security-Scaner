@@ -1,5 +1,5 @@
 from prepare_data_for_sft import process_cleaning_dataset_to_SFT
-from prompts_classifier import define_prompt_safety,load_pretrained_model
+from prompts_classifier import define_prompt_safety,load_pretrained_classification_model
 from prepare_data_for_prompts_classifier import change_dataset_column_to_necessary_form
 import pandas as pd
 def get_chosen_rejected(row,column_1_response:str=None,
@@ -9,11 +9,22 @@ def get_chosen_rejected(row,column_1_response:str=None,
 
 
     if bool(row[label_column_1_response]) and not bool(row[label_column_2_response]):
-        return pd.Series({'prompt':row['prompt'],'chosen':row[column_1_response],'rejected':row[column_2_response]})
+        return pd.Series({'prompt':row['prompt'],
+                          'chosen':row[column_1_response],
+                          'rejected':row[column_2_response],
+                          'is_unsafe_prompt':row['is_unsafe_prompt'],
+                          'confidence':row['predicted_class_confidence']})
     elif not bool(row[label_column_1_response]) and bool(row[label_column_2_response]):
-        return pd.Series({'prompt':row['prompt'],'chosen':row[column_2_response],'rejected':row[column_1_response]})
+        return pd.Series({'prompt':row['prompt'],
+                          'chosen':row[column_2_response],
+                          'rejected':row[column_1_response],
+                          'is_unsafe_prompt':row['is_unsafe_prompt'],
+                          'confidence':row['predicted_class_confidence']})
     else:
-        return pd.Series({'prompt':row['prompt'],'chosen':None,'rejected':None})
+        return pd.Series({'prompt':row['prompt'],
+                          'chosen':None,'rejected':None,
+                          'is_unsafe_prompt':row['is_unsafe_prompt'],
+                          'confidence':row['predicted_class_confidence']})
 def process_cleaning_data_to_DPO(data:pd.DataFrame,prompt_column='prompt',
                                  name_column_for_rename='prompt',
                                  is_drop_nan:bool=False,
@@ -32,7 +43,7 @@ def process_cleaning_data_to_DPO(data:pd.DataFrame,prompt_column='prompt',
                                                  columns_to_drop_nan=columns_to_drop_nan,
                                                  is_clean_text=is_clean_text,
                                                  columns_to_clean_text=columns_to_clean_text,
-                                                 is_unsafe=False
+                                                 is_define_prompt_category=False
 
                                                  )
 
@@ -47,9 +58,11 @@ def process_cleaning_data_to_DPO(data:pd.DataFrame,prompt_column='prompt',
 
 
         data=data.dropna(subset=['chosen','rejected'])
+    else:
+        data=data.rename(columns={'predicted_class_confidence':'confidence'})
 
 
-    return data[['prompt','chosen','rejected']]
+    return data[['prompt','chosen','rejected','is_unsafe_prompt','confidence']]
 
 
 
@@ -71,10 +84,13 @@ if __name__ == '__main__':
                                                                        is_detect_english_texts=True
 
                                                                        )
-    model, tokenizer = load_pretrained_model('prompts classifier')
-    PKU_Alignment_PKU_SafeRLHF_train = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_train, model, tokenizer,
-                                                            min_confidence=0.85)
+    model, tokenizer = load_pretrained_classification_model('prompts classifier')
+    PKU_Alignment_PKU_SafeRLHF_train = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_train,
+                                                            model, tokenizer,
+                                                            min_confidence=None,save_confidence=True)
+
     # add define prompt safety in process_cleaning_dataset_to_SFT
+
 
     PKU_Alignment_PKU_SafeRLHF_train = process_cleaning_data_to_DPO(data=PKU_Alignment_PKU_SafeRLHF_train,
                                                                     is_drop_nan=True,
@@ -93,6 +109,7 @@ if __name__ == '__main__':
     print('PKU_Alignment_PKU_SafeRLHF_train:')
     print(PKU_Alignment_PKU_SafeRLHF_train.info())
 
+
     LLM_LAT_harmful_dataset = process_cleaning_dataset_to_SFT(path_to_dataset="LLM-LAT/harmful-dataset",
                                                               source_type='Hugging Face',
                                                               split='train',
@@ -109,6 +126,10 @@ if __name__ == '__main__':
                                                               is_detect_english_texts=True
 
                                                               )
+
+    LLM_LAT_harmful_dataset = define_prompt_safety(LLM_LAT_harmful_dataset, model, tokenizer,
+                                                            min_confidence=None,save_confidence=True)
+
     LLM_LAT_harmful_dataset=process_cleaning_data_to_DPO(data=LLM_LAT_harmful_dataset,
                                                          is_drop_nan=True,
                                                          columns_to_drop_nan=['prompt', 'chosen','rejected'],
@@ -118,8 +139,10 @@ if __name__ == '__main__':
 
     print('LLM_LAT_harmful_dataset:')
     print(LLM_LAT_harmful_dataset.info())
+
     simple_dpo_data_without_response_from_sft_model=pd.concat([PKU_Alignment_PKU_SafeRLHF_train,LLM_LAT_harmful_dataset])
     simple_dpo_data_without_response_from_sft_model=simple_dpo_data_without_response_from_sft_model.drop_duplicates(subset='prompt')
     simple_dpo_data_without_response_from_sft_model.to_csv('simple_dpo_data_without_response_from_sft_model.csv')
     print('simple_dpo_data_without_response_from_sft_model:')
     print(simple_dpo_data_without_response_from_sft_model.info())
+    print(simple_dpo_data_without_response_from_sft_model['is_unsafe_prompt'].value_counts())

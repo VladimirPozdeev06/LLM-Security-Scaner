@@ -43,6 +43,7 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
 
                                             prompt_column:str,
                                             name_column_for_rename:str='prompt',
+                                            is_define_prompt_category:bool=True,
                                             different_prompt_category:bool=False,
                                             is_unsafe:bool=None,
                                             category_column:str=None,
@@ -62,10 +63,11 @@ def change_dataset_column_to_necessary_form(dataset:pd.DataFrame,
         else:
             for column in columns_to_clean_text:
                 dataset[column]=dataset[column].apply(clean_prompt_text)
-    if different_prompt_category:
-        dataset[f'is_unsafe_{name_column_for_rename}']=np.where(dataset[category_column]==unsafe_prompt_category,1,0)
-    else:
-        dataset[f'is_unsafe_{name_column_for_rename}']=int(is_unsafe)
+    if is_define_prompt_category:
+        if different_prompt_category:
+            dataset[f'is_unsafe_{name_column_for_rename}']=np.where(dataset[category_column]==unsafe_prompt_category,1,0)
+        else:
+            dataset[f'is_unsafe_{name_column_for_rename}']=int(is_unsafe)
 
 
     if is_drop_nan:
