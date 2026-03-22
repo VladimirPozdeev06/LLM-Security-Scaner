@@ -21,7 +21,7 @@ def process_cleaning_dataset_to_SFT(path_to_dataset:str,
                                             is_unsafe: bool = None,
                                             category_column: str = None,
                                             unsafe_prompt_category: Union[str, int] = None,
-
+                                            is_define_prompt_category:bool=False,
                                             is_clasteresation: bool = False,
                                             nested_prompt_column:str=None,
                                             n_samples:int=3,
@@ -48,7 +48,8 @@ def process_cleaning_dataset_to_SFT(path_to_dataset:str,
                                                  different_prompt_category=different_prompt_category,
                                                  is_unsafe=is_unsafe,
                                                  category_column=category_column,
-                                                 unsafe_prompt_category=unsafe_prompt_category
+                                                 unsafe_prompt_category=unsafe_prompt_category,
+                                                 is_define_prompt_category=is_define_prompt_category,
 
                                    )
     data = data.drop_duplicates(subset=['prompt'])
