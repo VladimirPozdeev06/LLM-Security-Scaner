@@ -2,6 +2,9 @@ from prepare_data_for_sft import process_cleaning_dataset_to_SFT
 from prompts_classifier import define_prompt_safety,load_pretrained_classification_model
 from prepare_data_for_prompts_classifier import change_dataset_column_to_necessary_form
 import pandas as pd
+import re
+from tqdm import tqdm
+import torch
 def get_chosen_rejected(row,column_1_response:str=None,
                                  column_2_response:str=None,
                                  label_column_1_response:str=None,
@@ -67,6 +70,102 @@ def process_cleaning_data_to_DPO(data:pd.DataFrame,prompt_column='prompt',
 
 
 
+
+def generate_batch(model, tokenizer, prompts, config, batch_size=8, max_new_tokens=500):
+    SYSTEM_PROMPT = (
+        "You are a security-focused AI assistant. "
+        "Always respond in English. "
+        "After your response, you MUST add analysis in this exact format:\n"
+        "Analysis: [explanation]; is_unsafe: [0 or 1]; attack_type: [type]; confidence: [high/medium/low]; Recommendation: [SAFE/REVIEW/BLOCK]"
+    )
+    all_responses = []
+    for i in tqdm(range(0, len(prompts), batch_size)):
+        batch_prompts = prompts[i:i + batch_size]
+
+        text = [
+            f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n"
+            f"<|im_start|>user\n{p}<|im_end|>\n"
+            f"<|im_start|>assistant\n"
+            for p in batch_prompts
+        ]
+        tokenizer.padding_side = 'left'
+
+        inputs = tokenizer(text,
+                           return_tensors='pt',
+                           truncation=True,
+                           padding=True,
+                           max_length=512
+                           ).to(model.device)
+
+        with torch.no_grad():
+            outputs = model.generate(**inputs,
+                                     pad_token_id=tokenizer.pad_token_id,
+                                     eos_token_id=tokenizer.eos_token_id,
+                                     max_new_tokens=max_new_tokens,
+                                     **config)
+        for j, output in enumerate(outputs):
+            input_len = inputs['input_ids'].shape[1]
+            new_tokens = output[input_len:]
+            response = tokenizer.decode(new_tokens, skip_special_tokens=True)
+            if '</think>' in response:
+                response = response.split('</think>')[-1].strip()
+            all_responses.append(response)
+
+    return all_responses
+
+
+
+
+
+def generate_responses_batched(model, tokenizer, prompts, labels, batch_size=8):
+    GENERATION_CONFIGS = [
+
+        {"do_sample": True, "temperature": 0.3, "top_p": 0.9},
+
+
+        {"do_sample": True, "temperature": 0.8, "top_k": 50},
+
+
+        {"do_sample": True, "temperature": 1.2, "top_p": 0.95},
+        {"do_sample": True, "temperature": 1.4, "top_p": 0.95},
+
+
+        {"do_sample": True, "temperature": 1.7, "top_k": 100},
+        {"do_sample": True, "temperature": 2.0, "top_p": 0.99},
+    ]
+    results = []
+
+    for config_idx, config in enumerate(GENERATION_CONFIGS):
+        print(f"Config {config_idx + 1}")
+        responses = generate_batch(model, tokenizer, prompts, config, batch_size=batch_size)
+
+        if config_idx == 0:
+
+            for prompt, label, response in zip(prompts, labels, responses):
+                results.append({
+                    "prompt": prompt,
+                    "label": label,
+                    "responses": [response]
+                })
+        else:
+
+            for i, response in enumerate(responses):
+                results[i]["responses"].append(response)
+
+    return results
+def extract_features_from_answer(test_data:pd.DataFrame,is_unsafe:bool=True,user_message:bool=True):
+    if is_unsafe:
+        test_data['is_unsafe'] = test_data['text'].apply(lambda x:
+                                                         int(re.search(r'is_unsafe:\s*(\d+)', str(x)).group(1))
+                                                         if re.search(r'is_unsafe:\s*(\d+)', str(x)) else None
+                                                         )
+    if user_message:
+        test_data['user_message'] = test_data['text'].str.extract(
+            r'<\|im_start\|>user\n(.*?)<\|im_end\|>',
+            expand=False,
+            flags=re.DOTALL
+        ).str.strip()
+    return test_data
 if __name__ == '__main__':
     PKU_Alignment_PKU_SafeRLHF_train = process_cleaning_dataset_to_SFT(path_to_dataset="PKU-Alignment/PKU-SafeRLHF",
                                                                            source_type='Hugging Face',
