@@ -166,6 +166,12 @@ def extract_features_from_answer(test_data:pd.DataFrame,is_unsafe:bool=True,user
             flags=re.DOTALL
         ).str.strip()
     return test_data
+def is_valid_response(response):
+    #if len(response)<50:
+        #return False
+    if re.search(r'[\u0600-\u06ff\u4e00-\u9fff\u3040-\u30ff\uff00-\uffef]', response):
+        return False
+    return True
 if __name__ == '__main__':
     PKU_Alignment_PKU_SafeRLHF_train = process_cleaning_dataset_to_SFT(path_to_dataset="PKU-Alignment/PKU-SafeRLHF",
                                                                            source_type='Hugging Face',
