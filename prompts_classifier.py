@@ -7,8 +7,10 @@ from transformers import  AutoTokenizer, AutoModelForSequenceClassification
 import torch
 from tqdm import tqdm
 from typing import List
-def split_data(data: pd.DataFrame,text_column:str='prompt',label_column:str='is_unsafe') :
-    data = data.rename(columns={text_column: 'text', label_column: 'label'})
+def split_data(data: pd.DataFrame,columns_after_split:list[str],text_column:str='prompt',label_column:str|None='is_unsafe') :
+    data = data.rename(columns={text_column: 'text'})
+    if label_column is not None:
+        data = data.rename(columns={label_column: 'label'})
     train_data, test_data = train_test_split(data,
                                              test_size=0.2,
                                              stratify=data['from_dataset'],
@@ -17,9 +19,9 @@ def split_data(data: pd.DataFrame,text_column:str='prompt',label_column:str='is_
                                             test_size=0.125,
                                             stratify=train_data['from_dataset'],
                                             random_state=17)
-    train_dataset = Dataset.from_pandas(train_data[['text', 'label']])
-    val_dataset = Dataset.from_pandas(val_data[['text', 'label']])
-    test_dataset = Dataset.from_pandas(test_data[['text', 'label']])
+    train_dataset = Dataset.from_pandas(train_data[columns_after_split],preserve_index=False)
+    val_dataset = Dataset.from_pandas(val_data[columns_after_split],preserve_index=False)
+    test_dataset = Dataset.from_pandas(test_data[columns_after_split],preserve_index=False)
     return train_dataset, val_dataset, test_dataset
 
 
