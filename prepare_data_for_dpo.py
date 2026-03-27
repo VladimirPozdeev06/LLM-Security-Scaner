@@ -153,18 +153,47 @@ def generate_responses_batched(model, tokenizer, prompts, labels, batch_size=8):
                 results[i]["responses"].append(response)
 
     return results
-def extract_features_from_answer(test_data:pd.DataFrame,is_unsafe:bool=True,user_message:bool=True):
+def extract_response_and_analysis(full_response):
+
+    idx = full_response.rfind("Analysis:")
+
+    if idx == -1:
+
+        return full_response.strip(), None
+
+    response_part = full_response[:idx].strip()
+    analysis_part = full_response[idx:].strip()
+    return response_part, analysis_part
+
+
+def process_responses_list(responses_list):
+
+    clean_responses = []
+    analyses = []
+
+    for response in responses_list:
+        clean, analysis = extract_response_and_analysis(response)
+        clean_responses.append(clean)
+        analyses.append(analysis)
+
+    return clean_responses, analyses
+def extract_features_from_answer(test_data:pd.DataFrame,text_column:str='text',
+                                 is_unsafe:bool=True,
+                                 user_message:bool=True
+                 ):
     if is_unsafe:
-        test_data['is_unsafe'] = test_data['text'].apply(lambda x:
+        test_data['is_unsafe'] = test_data[text_column].apply(lambda x:
                                                          int(re.search(r'is_unsafe:\s*(\d+)', str(x)).group(1))
                                                          if re.search(r'is_unsafe:\s*(\d+)', str(x)) else None
                                                          )
     if user_message:
-        test_data['user_message'] = test_data['text'].str.extract(
+        test_data['user_message'] = test_data[text_column].str.extract(
             r'<\|im_start\|>user\n(.*?)<\|im_end\|>',
             expand=False,
             flags=re.DOTALL
         ).str.strip()
+
+
     return test_data
 def is_valid_response(response):
     #if len(response)<50:
