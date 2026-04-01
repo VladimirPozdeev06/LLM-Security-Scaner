@@ -294,8 +294,28 @@ if __name__ == '__main__':
     print('claude_dataset:')
     print(claude_dataset.info())
 
+    claude_dataset2 = process_cleaning_dataset_to_SFT(
+        path_to_dataset='roleplay_dpo_200.csv',
+        source_type='csv',
+        print_info=True,
+        dataset_name='claude_dataset',
+        prompt_column='prompt'
 
-    simple_dpo_data_without_response_from_sft_model=pd.concat([PKU_Alignment_PKU_SafeRLHF_train,LLM_LAT_harmful_dataset,claude_dataset])
+    )
+    model, tokenizer = load_pretrained_classification_model('prompts classifier')
+    claude_dataset2 = define_prompt_safety(claude_dataset2, model, tokenizer,
+                                          min_confidence=None, save_confidence=True)
+    claude_dataset2 = process_cleaning_data_to_DPO(data=claude_dataset2,
+                                                  is_drop_nan=True,
+                                                  columns_to_drop_nan=['prompt', 'chosen', 'rejected'],
+                                                  is_clean_text=True,
+                                                  columns_to_clean_text=['prompt', 'chosen', 'rejected'],
+                                                  has_response_label_column=False)
+    print('claude_dataset2:')
+    print(claude_dataset2.info())
+
+
+    simple_dpo_data_without_response_from_sft_model=pd.concat([PKU_Alignment_PKU_SafeRLHF_train,LLM_LAT_harmful_dataset,claude_dataset,claude_dataset2])
     simple_dpo_data_without_response_from_sft_model=simple_dpo_data_without_response_from_sft_model.drop_duplicates(subset='prompt')
     simple_dpo_data_without_response_from_sft_model.to_csv('simple_dpo_data_without_response_from_sft_model.csv')
     print('simple_dpo_data_without_response_from_sft_model:')
