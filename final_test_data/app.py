@@ -52,4 +52,8 @@ def analyze(prompt_request: PromptRequest):
     return response
 
 @app.get('/healthcheck')
-def heal
+def health():
+    return {
+        'status':'ok',
+        'models_loaded': _classifier is not None
+    }
