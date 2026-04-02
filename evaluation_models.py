@@ -7,8 +7,8 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 from rouge_score import rouge_scorer
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
-from prompts_classifier import load_pretrained_classification_model
-
+from prompts_classifier import load_pretrained_classification_model, define_prompt_safety
+from prepare_data_for_dpo import generate_batch
 from evaluate import load
 
 from bert_score import score
@@ -141,7 +141,90 @@ def compute_all_metrics_responses(test_data:pd.DataFrame,path_data:str,
     if is_quantitative_metrics:
         compute_quantitative_metrics(data)
 
+def compute_metrics_for_classifier_only(data,model_path,prompt_column='user_message'):
+    model,tokenizer=load_pretrained_classification_model(model_path)
+    start = time.time()
+    first_step_labels = define_prompt_safety(data, model, tokenizer, device=model.device,
+                                             prompt_column=prompt_column, save_confidence=True)
+    classifier_time = time.time() - start
+    print(classifier_time)
+    print(first_step_labels.info())
+    compute_numeric_metrics(first_step_labels)
+    return first_step_labels
+
+def generate_responses_for_evaluate_second_step_hubrid_system(first_step_labels:pd.DataFrame,
+                                                              dpo_model_extended,tokenizer_dpo,
+                                                              CONFIG):
+    prompts_with_low_classifier_confidence = first_step_labels[first_step_labels['predicted_class_confidence'] <= 0.95][
+        'user_message'].tolist()
+    responses_on_prompts_with_low_classifier_confidence = generate_batch(dpo_model_extended, tokenizer_dpo,
+                                                                         prompts_with_low_classifier_confidence, CONFIG)
+
+    low_confidence_data = first_step_labels[first_step_labels['predicted_class_confidence'] <= 0.95]
+    #print(low_confidence_data.info())
+    responses_on_prompts_with_low_classifier_confidence = pd.Series(responses_on_prompts_with_low_classifier_confidence)
+    responses_on_prompts_with_low_classifier_confidence.to_csv(
+        'responses_on_prompts_with_low_classifier_confidence.csv')
+    low_confidence_data.loc[:, 'dpo_respone'] = responses_on_prompts_with_low_classifier_confidence
 
 
+    low_confidence_data.loc[:, 'is_unsafe_value'] = low_confidence_data['dpo_respone'].str.extract(
+        r'is_unsafe:\s*(\d+)', expand=False).astype(float)
 
+    compute_all_metrics_responses(
+        low_confidence_data[['text', 'user_message', 'response_part_real', 'is_unsafe_prompt_real']],
+        'responses_on_prompts_with_low_classifier_confidence.csv', is_numeric_metrics=False)
+    return first_step_labels, low_confidence_data
+def compute_metrics_for_hybrid_system(first_step_labels, low_confidence_data):
+    second_step_labels = pd.merge(first_step_labels, low_confidence_data[['user_message', 'is_unsafe_value']],
+                                  how='outer', on='user_message')
+    compute_quantitative_metrics(second_step_labels)
 
+def win_rate(data1:pd.Series,data2:pd.Series):
+  return (((data2 == data1).sum() / 2)+(data2 > data1).sum()) /len(data1)
+
+def prepare_data_for_win_rate_evaluation(data:pd.DataFrame, model_path='dpo_response_classifier',path1:str=None,path2:str=None,path3:str=None,path4:str=None):
+    result_base = compute_all_metrics_responses(data, 'final_test_data/responses_base_model.csv',
+                                               model_path=model_path,
+                                               is_format_metrics=False,
+                                               is_numeric_metrics=False,
+                                               is_safety_metrics=True,
+                                               return_confidence=True,
+                                               is_text_metrics=False,
+                                               is_semantic_metrics=False)
+    result_sft = compute_all_metrics_responses(data,
+                                               'final_test_data/responses_sft_2.csv',
+                                               model_path=model_path,
+                                              is_format_metrics=False,
+                                              is_numeric_metrics=False,
+                                              is_safety_metrics=True,
+                                              return_confidence=True,
+                                              is_text_metrics=False,
+                                              is_semantic_metrics=False)
+    result_dpo_without_sft_answers = compute_all_metrics_responses(data,
+                                                        'final_test_data/responses_dpo_model_without_sft_answers_final.csv',
+                                                                   model_path=model_path,
+                                                                  is_format_metrics=False,
+                                                                  is_numeric_metrics=False,
+                                                                  is_safety_metrics=True,
+                                                                  return_confidence=True,
+                                                                  is_text_metrics=False,
+                                                                  is_semantic_metrics=False)
+    result_dpo_extended = compute_all_metrics_responses(data,
+                                                        'final_test_data/responses_dpo_extended_model.csv',
+                                                        model_path=model_path,
+                                                       is_format_metrics=False,
+                                                       is_numeric_metrics=False,
+                                                       is_safety_metrics=True,
+                                                       return_confidence=True,
+                                                       is_text_metrics=False,
+                                                       is_semantic_metrics=False)
+    result_base = result_base.rename('confidence_chosen_class_base')
+    result_sft = result_sft.rename('confidence_chosen_class_sft')
+    result_dpo_without_sft_answers = result_dpo_without_sft_answers.rename(
+        'confidence_chosen_class_dpo_without_sft_answers')
+    result_dpo_extended = result_dpo_extended.rename('confidence_chosen_class_dpo_extended')
+    all_results_confidence_chosen_response = pd.concat(
+        [result_base, result_sft, result_dpo_without_sft_answers, result_dpo_extended], axis=1)
+    all_results_confidence_chosen_response = all_results_confidence_chosen_response.reset_index(drop=True)
+    return all_results_confidence_chosen_response

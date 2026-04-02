@@ -113,5 +113,6 @@ def define_prompt_safety(data:pd.DataFrame,
         result=results[['prompt','is_unsafe_prompt','predicted_class_confidence']]
     else:
         result=results[['prompt','is_unsafe_prompt']]
-    data=pd.merge(data,result,how='right',on='prompt')
+
+    data=pd.merge(data,result,how='right',left_on= prompt_column,right_on='prompt')
     return data
