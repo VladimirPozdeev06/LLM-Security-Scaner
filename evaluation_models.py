@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import numpy as np
 from rouge_score import rouge_scorer
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
-
+from prompts_classifier import load_pretrained_classification_model
 
 from evaluate import load
 
@@ -17,7 +17,7 @@ from prepare_data_for_dpo import extract_response_and_analysis, extract_analysis
 from prompts_classifier import predict_batch
 
 def prepare_data_to_necessary_from_for_evaluation(path:str='final_test_data/test_data_final_all_models.csv',text_column:str='text')->pd.DataFrame:
-    data = pd.read_csv('/content/drive/MyDrive/test_data_final_all_models.csv', index_col=0)
+    data = pd.read_csv(path, index_col=0)
     data = data.reset_index(drop=True)
     data['response_part'], data['analysis_part'] = zip(
         *data[text_column].apply(extract_response_and_analysis)
@@ -27,7 +27,7 @@ def prepare_data_to_necessary_from_for_evaluation(path:str='final_test_data/test
     data = data.join(fields_df)
     if 'is_unsafe' in data.columns:
         data = data.drop(columns=['is_unsafe'])
-    print(data.info())
+    #print(data.info())
     return data
 
 def compute_format_metrics(data:pd.DataFrame)->None:
@@ -44,10 +44,10 @@ def compute_format_metrics(data:pd.DataFrame)->None:
     print(f'Полное соответствие формату {data['all_analysis'].mean():.1%}', )
 
 def compute_numeric_metrics(data:pd.DataFrame):
-    data_calssification_metrics = data[data['is_unsafe_prompt'].notna()].reset_index(drop=True)
-    data_calssification_metrics['is_unsafe_prompt'] = data_calssification_metrics['is_unsafe_prompt'].astype('int')
-    y_true = data_calssification_metrics['is_unsafe_prompt_real']
-    y_pred = data_calssification_metrics['is_unsafe_prompt']
+    data_classification_metrics = data[data['is_unsafe_prompt'].notna()].reset_index(drop=True)
+    data_classification_metrics['is_unsafe_prompt'] = data_classification_metrics['is_unsafe_prompt'].astype('int')
+    y_true = data_classification_metrics['is_unsafe_prompt_real']
+    y_pred = data_classification_metrics['is_unsafe_prompt']
 
     accuracy = round(accuracy_score(y_true, y_pred), 3)
     print(f'Acccuracy: {accuracy}')
@@ -61,10 +61,11 @@ def compute_numeric_metrics(data:pd.DataFrame):
     recall = round(recall_score(y_true, y_pred, average='binary'), 3)
     print(f'Recall: {recall}')
 
-    # print(classification_report(data_calssification_metrics['is_unsafe_prompt_real'],data_calssification_metrics['is_unsafe_prompt']))
+    # print(classification_report(data_classification_metrics['is_unsafe_prompt_real'],data_classification_metrics['is_unsafe_prompt']))
 
 
-def compute_safety_metrics(data:pd.DataFrame,model,tokenizer,return_confidence:bool=False):
+def compute_safety_metrics(data:pd.DataFrame,model_path:str,return_confidence:bool=False):
+    model,tokenizer=load_pretrained_classification_model(model_path)
     results = predict_batch(data['response_part'].tolist(), model, tokenizer,
                             target_prediction_name='is_unsafe_response')
     results = pd.DataFrame(results)
@@ -103,7 +104,7 @@ def compute_semantic_metrics(data:pd.DataFrame)->None:
         model_type='bert-base-uncased',
         lang='en',
         verbose=True,
-        device='cuda'
+        device='cuda' if torch.cuda.is_available() else 'cpu',
 
     )
     print(f"BERTScore Precision: {P.mean().item():.4f}")
@@ -114,6 +115,7 @@ def compute_quantitative_metrics(data:pd.DataFrame)->None:
     print(f"Средняя длина ответа: {data['response_part'].str.len().mean()}")
 
 def compute_all_metrics_responses(test_data:pd.DataFrame,path_data:str,
+                                 model_path:str=None,
                                  is_format_metrics:bool=True,
                                  is_numeric_metrics:bool=True,
                                  is_safety_metrics:bool=True,
@@ -130,8 +132,8 @@ def compute_all_metrics_responses(test_data:pd.DataFrame,path_data:str,
         compute_numeric_metrics(data)
     if is_safety_metrics:
         if return_confidence:
-            return compute_safety_metrics(data,return_confidence)
-        else: compute_safety_metrics(data)
+            return compute_safety_metrics(data,model_path,return_confidence)
+        else: compute_safety_metrics(data,model_path)
     if is_text_metrics:
         compute_text_metrics(data)
     if is_semantic_metrics:
