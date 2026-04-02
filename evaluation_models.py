@@ -202,7 +202,7 @@ def prepare_data_for_win_rate_evaluation(data:pd.DataFrame, model_path='dpo_resp
                                               is_text_metrics=False,
                                               is_semantic_metrics=False)
     result_dpo_without_sft_answers = compute_all_metrics_responses(data,
-                                                        'final_test_data/responses_dpo_model_without_sft_answers_final.csv',
+                                                        'final_test_data/responses_dpo_without_sft_answers_2.csv',
                                                                    model_path=model_path,
                                                                   is_format_metrics=False,
                                                                   is_numeric_metrics=False,
