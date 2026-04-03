@@ -1,12 +1,12 @@
 import torch
 from transformers import BitsAndBytesConfig, AutoTokenizer,AutoModelForCausalLM
 from peft import PeftModel
-from prepare_data_for_dpo import extract_response_and_analysis,extract_analysis_fields
-from prompts_classifier import load_pretrained_classification_model
+from utils import extract_response_and_analysis,extract_analysis_fields,load_pretrained_classification_model
+
 import os
 from dotenv import load_dotenv
 load_dotenv()
-CLASSIFIER_PATH='prompts classifier'
+CLASSIFIER_PATH='prompts_classifier'
 BASE_MODEL = "Qwen/Qwen3-4B"
 DPO_EXTENDED_PATH='dpo_model_extended'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

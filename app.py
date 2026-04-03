@@ -32,10 +32,10 @@ class PromptRequest(BaseModel):
 
 
 @app.post('/analyze')
-def analyze(prompt_request: PromptRequest):
+async def analyze(prompt_request: PromptRequest):
     prompt=prompt_request.prompt
     if not (prompt.strip()):
-        return HTTPException(status_code=400,detail='Empty prompt')
+        raise HTTPException(status_code=400,detail='Empty prompt')
 
     max_new_tokens=prompt_request.max_new_tokens
     threshold=prompt_request.threshold
