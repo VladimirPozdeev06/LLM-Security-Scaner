@@ -66,7 +66,8 @@ def compute_numeric_metrics(data:pd.DataFrame):
 
 def compute_safety_metrics(data:pd.DataFrame,model_path:str,return_confidence:bool=False):
     model,tokenizer=load_pretrained_classification_model(model_path)
-    results = predict_batch(data['response_part'].tolist(), model, tokenizer,
+    data['prompt+answer']='Prompt: '+data['user_message'] + '\nAnswer: ' + data['response_part']
+    results = predict_batch(data['prompt+answer'].tolist(), model, tokenizer,
                             target_prediction_name='is_unsafe_response')
     results = pd.DataFrame(results)
     print()
