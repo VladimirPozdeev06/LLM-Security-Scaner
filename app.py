@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
 from create_hybrid_system import get_models, hybrid_system
 
@@ -8,8 +8,8 @@ _classifier = None
 _clf_tokenizer = None
 _llm_model = None
 _llm_tokenizer = None
-@contextmanager
-def lifespan(app:FastAPI):
+@asynccontextmanager
+async def lifespan(app:FastAPI):
     global _classifier, _clf_tokenizer, _llm_model, _llm_tokenizer
     print('Load models')
     _classifier, _clf_tokenizer, _llm_model, _llm_tokenizer = get_models()

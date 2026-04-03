@@ -11,6 +11,7 @@ BASE_MODEL = "Qwen/Qwen3-4B"
 DPO_EXTENDED_PATH='dpo_model_extended'
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SYSTEM_PROMPT = (
+    "/no_think\n"
     "You are a security-focused AI assistant. "
     "Always respond in English. "
     "After your response, add analysis in this exact format:\n"
@@ -74,7 +75,7 @@ def generate_response(prompt,model,tokenizer,max_new_tokens:int=512):
             eos_token_id=tokenizer.eos_token_id
         )
     input_len = input['input_ids'].shape[1]
-    new_tokens = output[input_len:]
+    new_tokens = output[0][input_len:]
     return tokenizer.decode(new_tokens, skip_special_tokens=True)
 
 def hybrid_system(prompt,
@@ -97,6 +98,8 @@ def hybrid_system(prompt,
             'predicted_classifier_confidence': predictions_safety_results['predicted_confidence'],
         }
     response=generate_response(prompt,llm_model,llm_tokenizer,max_new_tokens)
+    if '</think>' in response:
+        response = response.split('</think>')[-1].strip()
     response_part,analysis_part=extract_response_and_analysis(response)
     fields = extract_analysis_fields(analysis_part)
 
