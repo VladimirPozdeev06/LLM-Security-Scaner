@@ -29,12 +29,19 @@ BNB_CONFIG = BitsAndBytesConfig(
 )
 def load_llm(base_model_path,peft_path:str,token,device:str='cpu'):
     tokenizer=AutoTokenizer.from_pretrained(base_model_path,token=token,trust_remote_code=True)
-    base_model=AutoModelForCausalLM.from_pretrained(base_model_path,
+    if device=='cuda':
+        base_model=AutoModelForCausalLM.from_pretrained(base_model_path,
                                                     quantization_config=BNB_CONFIG,
                                                     dtype=torch.float16,
                                                     device_map='auto',
                                                     token=token
                                                     )
+    else:
+        base_model = AutoModelForCausalLM.from_pretrained(
+            base_model_path,
+            dtype=torch.float32,
+            token=token
+        )
     model=PeftModel.from_pretrained(base_model,peft_path)
     model.eval()
     return model,tokenizer
