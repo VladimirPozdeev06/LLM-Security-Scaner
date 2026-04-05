@@ -1,16 +1,25 @@
 from fastapi import FastAPI, HTTPException,Request
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-
+import logging
 from create_hybrid_system import get_models, hybrid_system
 
 DEFAULT_MAX_NEW_TOKENS = 512
 DEFAULT_CLASSIFIER_THRESHOLD = 0.85
 MAX_PROMPT_LENGTH = 2000
+
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app:FastAPI):
 
-    print('Load models')
+    logger.info("Loading models...")
     classifier, clf_tokenizer, llm_model, llm_tokenizer = get_models()
     app.state.classifier = classifier
     app.state.clf_tokenizer = clf_tokenizer
@@ -18,7 +27,7 @@ async def lifespan(app:FastAPI):
     app.state.llm_tokenizer = llm_tokenizer
 
     yield
-    print('END')
+    logger.info('Turning off')
 app = FastAPI(
     title="LLM Security Scanner",
     description="Hybrid safety classifier + generative model pipeline",
@@ -41,7 +50,7 @@ async def analyze(prompt_request: PromptRequest,request: Request):
         raise HTTPException(status_code=400,detail='Empty prompt')
     if len(prompt.strip()) > MAX_PROMPT_LENGTH:
         raise HTTPException(status_code=400,detail='Prompt too long')
-
+    logger.info(f"Analyzing prompt, length={len(prompt)}")
     max_new_tokens=prompt_request.max_new_tokens
     threshold=prompt_request.threshold
 
