@@ -2,10 +2,10 @@ from fastapi import FastAPI, HTTPException,Request
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 import logging
-from create_hybrid_system import get_models, hybrid_system
+from create_hybrid_system import get_models, hybrid_system, DEFAULT_MAX_NEW_TOKENS, DEFAULT_CLASSIFIER_THRESHOLD
 
-DEFAULT_MAX_NEW_TOKENS = 512
-DEFAULT_CLASSIFIER_THRESHOLD = 0.85
+
+
 MAX_PROMPT_LENGTH = 2000
 
 

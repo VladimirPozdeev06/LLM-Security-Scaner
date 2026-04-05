@@ -56,6 +56,7 @@ def predict_classifier(prompt,model,tokenizer):
         max_length=512
 
     )
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
 
     with torch.no_grad():
         output=model(**inputs)
@@ -73,7 +74,7 @@ def generate_response(prompt,model,tokenizer,max_new_tokens:int=DEFAULT_MAX_NEW_
         f"<|im_start|>user\n{prompt}<|im_end|>\n"
         f"<|im_start|>assistant\n"
     )
-    inputs=tokenizer(text,return_tensors='pt').to(model.device)
+    inputs=tokenizer(text,return_tensors='pt')
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
     with torch.no_grad():
         output=model.generate(
@@ -124,7 +125,10 @@ def hybrid_system(prompt,
 
 
 
-
+_classifier = None
+_clf_tokenizer = None
+_llm_model = None
+_llm_tokenizer = None
 def get_models():
     global _classifier,_clf_tokenizer,_llm_model,_llm_tokenizer
     if _classifier is None:

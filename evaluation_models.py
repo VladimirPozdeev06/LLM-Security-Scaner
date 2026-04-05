@@ -5,7 +5,6 @@ from sklearn.metrics import accuracy_score, classification_report,f1_score,preci
 import torch
 
 
-from rouge_score import rouge_scorer
 
 from prompts_classifier import load_pretrained_classification_model, define_prompt_safety
 from prepare_data_for_dpo import generate_batch
@@ -13,7 +12,7 @@ from evaluate import load
 
 from bert_score import score
 import time
-from prepare_data_for_dpo import extract_response_and_analysis, extract_analysis_fields
+from utils import extract_response_and_analysis, extract_analysis_fields
 from prompts_classifier import predict_batch
 
 def prepare_data_to_necessary_from_for_evaluation(path:str='final_test_data/test_data_final_all_models.csv',text_column:str='text')->pd.DataFrame:
