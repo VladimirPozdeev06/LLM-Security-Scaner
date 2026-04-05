@@ -1,18 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException,Request
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 from create_hybrid_system import get_models, hybrid_system
 
-_classifier = None
-_clf_tokenizer = None
-_llm_model = None
-_llm_tokenizer = None
+DEFAULT_MAX_NEW_TOKENS = 512
+DEFAULT_CLASSIFIER_THRESHOLD = 0.85
+MAX_PROMPT_LENGTH = 2000
 @asynccontextmanager
 async def lifespan(app:FastAPI):
-    global _classifier, _clf_tokenizer, _llm_model, _llm_tokenizer
+
     print('Load models')
-    _classifier, _clf_tokenizer, _llm_model, _llm_tokenizer = get_models()
+    classifier, clf_tokenizer, llm_model, llm_tokenizer = get_models()
+    app.state.classifier = classifier
+    app.state.clf_tokenizer = clf_tokenizer
+    app.state.llm_model = llm_model
+    app.state.llm_tokenizer = llm_tokenizer
 
     yield
     print('END')
@@ -32,7 +35,7 @@ class PromptRequest(BaseModel):
 
 
 @app.post('/analyze')
-async def analyze(prompt_request: PromptRequest):
+async def analyze(prompt_request: PromptRequest,request: Request):
     prompt=prompt_request.prompt
     if not (prompt.strip()):
         raise HTTPException(status_code=400,detail='Empty prompt')
@@ -42,10 +45,10 @@ async def analyze(prompt_request: PromptRequest):
 
     response = hybrid_system(
         prompt,
-        _clf_tokenizer,
-        _classifier,
-        _llm_tokenizer,
-        _llm_model,
+        request.app.state.clf_tokenizer,
+        request.app.state.classifier,
+        request.app.state.llm_tokenizer,
+        request.app.state.llm_model,
         threshold,
         max_new_tokens
     )

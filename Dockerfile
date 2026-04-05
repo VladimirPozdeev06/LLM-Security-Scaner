@@ -11,11 +11,12 @@ WORKDIR /app
 COPY requirements.txt .
 
 ARG DEVICE=cpu
-RUN pip3 install --no-cache-dir --upgrade pip \
+RUN pip3 install --no-cache-dir --upgrade pip && \
     if [ "$DEVICE" = "gpu" ]; then \
     && pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124 \
     else \
     pip3 install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu; \
+    fi \
     && pip3 install --no-cache-dir -r requirements.txt
 
 

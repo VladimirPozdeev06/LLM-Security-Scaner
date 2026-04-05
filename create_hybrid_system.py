@@ -6,9 +6,9 @@ from utils import extract_response_and_analysis,extract_analysis_fields,load_pre
 import os
 from dotenv import load_dotenv
 load_dotenv()
-CLASSIFIER_PATH='prompts_classifier'
-BASE_MODEL = "Qwen/Qwen3-4B"
-DPO_EXTENDED_PATH='dpo_model_extended'
+CLASSIFIER_PATH = os.getenv('CLASSIFIER_PATH', 'prompts_classifier')
+BASE_MODEL = os.getenv('BASE_MODEL', 'Qwen/Qwen3-4B')
+DPO_EXTENDED_PATH = os.getenv('DPO_EXTENDED_PATH', 'dpo_model_extended')
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 SYSTEM_PROMPT = (
     "/no_think\n"
