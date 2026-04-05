@@ -28,8 +28,8 @@ app = FastAPI(
 
 class PromptRequest(BaseModel):
     prompt: str
-    max_new_tokens: int = 512
-    threshold: float = 0.85
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS
+    threshold: float = DEFAULT_CLASSIFIER_THRESHOLD
 
 
 
@@ -39,6 +39,8 @@ async def analyze(prompt_request: PromptRequest,request: Request):
     prompt=prompt_request.prompt
     if not (prompt.strip()):
         raise HTTPException(status_code=400,detail='Empty prompt')
+    if len(prompt.strip()) > MAX_PROMPT_LENGTH:
+        raise HTTPException(status_code=400,detail='Prompt too long')
 
     max_new_tokens=prompt_request.max_new_tokens
     threshold=prompt_request.threshold
@@ -55,8 +57,8 @@ async def analyze(prompt_request: PromptRequest,request: Request):
     return response
 
 @app.get('/healthcheck')
-def health():
+def health(request:Request):
     return {
         'status':'ok',
-        'models_loaded': _classifier is not None
+        'models_loaded': request.app.state.classifier is not None and request.app.state.llm_model is not None,
     }

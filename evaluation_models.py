@@ -1,12 +1,12 @@
 import pandas as pd
-import re
+
 from sklearn.metrics import accuracy_score, classification_report,f1_score,precision_score,recall_score
-from tqdm import tqdm
+
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-import numpy as np
+
+
 from rouge_score import rouge_scorer
-from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
+
 from prompts_classifier import load_pretrained_classification_model, define_prompt_safety
 from prepare_data_for_dpo import generate_batch
 from evaluate import load
@@ -77,7 +77,7 @@ def compute_safety_metrics(data:pd.DataFrame,model_path:str,return_confidence:bo
         return results['confidence_chosen_class']
     return data
 def compute_text_metrics(data:pd.DataFrame)->None:
-    scorer = rouge_scorer.RougeScorer(['rouge1', 'rouge2', 'rougeL'], use_stemmer=True)
+
     rouge = load('rouge')
     bleu = load('bleu')
 

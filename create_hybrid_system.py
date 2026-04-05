@@ -10,6 +10,8 @@ CLASSIFIER_PATH = os.getenv('CLASSIFIER_PATH', 'prompts_classifier')
 BASE_MODEL = os.getenv('BASE_MODEL', 'Qwen/Qwen3-4B')
 DPO_EXTENDED_PATH = os.getenv('DPO_EXTENDED_PATH', 'dpo_model_extended')
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+DEFAULT_MAX_NEW_TOKENS = 512
+DEFAULT_CLASSIFIER_THRESHOLD = 0.85
 SYSTEM_PROMPT = (
     "/no_think\n"
     "You are a security-focused AI assistant. "
@@ -65,13 +67,14 @@ def predict_classifier(prompt,model,tokenizer):
         'is_unsafe_prompt':prediction,
         'predicted_confidence': (probs[0][0] if prediction==0 else probs[0][1]).item()
     }
-def generate_response(prompt,model,tokenizer,max_new_tokens:int=512):
+def generate_response(prompt,model,tokenizer,max_new_tokens:int=DEFAULT_MAX_NEW_TOKENS):
     text = (
         f"<|im_start|>system\n{SYSTEM_PROMPT}<|im_end|>\n"
         f"<|im_start|>user\n{prompt}<|im_end|>\n"
         f"<|im_start|>assistant\n"
     )
     inputs=tokenizer(text,return_tensors='pt').to(model.device)
+    inputs = {k: v.to(model.device) for k, v in inputs.items()}
     with torch.no_grad():
         output=model.generate(
             **inputs,
@@ -88,8 +91,8 @@ def generate_response(prompt,model,tokenizer,max_new_tokens:int=512):
 def hybrid_system(prompt,
                   classifier_tokenizer,classifier_model,
                   llm_tokenizer,llm_model,
-                  threshold:float=0.85,
-                  max_new_tokens:int=512):
+                  threshold:float=DEFAULT_CLASSIFIER_THRESHOLD,
+                  max_new_tokens:int=DEFAULT_MAX_NEW_TOKENS):
     predictions_safety_results=predict_classifier(prompt,classifier_model,classifier_tokenizer)
     if predictions_safety_results['is_unsafe_prompt']==1 and predictions_safety_results['predicted_confidence']>threshold:
         return {
