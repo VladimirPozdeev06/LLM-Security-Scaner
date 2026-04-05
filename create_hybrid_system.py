@@ -112,7 +112,7 @@ def hybrid_system(prompt,
     if '</think>' in response:
         response = response.split('</think>')[-1].strip()
     response_part,analysis_part=extract_response_and_analysis(response)
-    fields = extract_analysis_fields(analysis_part)
+    #fields = extract_analysis_fields(analysis_part)
 
     return {
         'prompt': prompt,

@@ -1,6 +1,4 @@
 import random
-import string
-import unicodedata
 import pandas as pd
 
 class ObscuredText:

@@ -169,7 +169,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  category_column=category_column,
                                                  unsafe_prompt_category=unsafe_prompt_category,
                                                  is_drop_nan=is_drop_nan,
-                                                 column_to_drop_nan=column_to_drop_nan)
+                                                 columns_to_drop_nan=column_to_drop_nan)
     data = data[['prompt', 'is_unsafe_prompt']]
     data=data.drop_duplicates(subset=['prompt'])
     if is_n_samples_split:
@@ -528,7 +528,7 @@ if __name__=='__main__':
 
     final_data=pd.concat(dataset_list)
     final_data = final_data.drop_duplicates(subset=['prompt'])
-    final_data.loc[final_data['is_unsafe']==0,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe']==0]['prompt'])
-    final_data.loc[final_data['is_unsafe']==1,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe']==1]['prompt'],number_transformed_prompts_by_category=8)
+    final_data.loc[final_data['is_unsafe_prompt']==0,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe_prompt']==0]['prompt'])
+    final_data.loc[final_data['is_unsafe_prompt']==1,'prompt']=apply_obscured_transformation(final_data[final_data['is_unsafe_prompt']==1]['prompt'],number_transformed_prompts_by_category=8)
     print(final_data.info())
-    print(final_data['is_unsafe'].value_counts())
+    print(final_data['is_unsafe_prompt'].value_counts())

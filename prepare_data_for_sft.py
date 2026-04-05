@@ -64,13 +64,14 @@ def transform_dataset_column_response(data:pd.DataFrame,
                                       column_to_split_dataset_on_response:List[str],
                                       response_column:str=None,
                                       is_drop_nan:bool=False,
-                                      columns_to_drop_nan:list=[],
+                                      columns_to_drop_nan:list=None,
                                       different_response_category:bool=False,
                                       is_unsafe: bool = None,
                                       category_column: str = None,
                                       unsafe_response_category: Union[str, int,bool] = None,
                                       generate_response:bool=False):
-
+    if columns_to_drop_nan is None:
+        columns_to_drop_nan = []
     data=data[column_to_split_dataset_on_response]
 
     if number_of_responses==0:
