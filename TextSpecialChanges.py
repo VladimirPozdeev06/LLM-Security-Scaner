@@ -5,7 +5,7 @@ import pandas as pd
 
 class ObscuredText:
     def __init__(self, seed: int = None, intensity: float = 0.5):
-        if seed:
+        if seed is not None:
             random.seed(seed)
         self.intensity = intensity
 
@@ -195,19 +195,23 @@ class ObscuredText:
 
 
 def apply_obscured_transformation(prompts_column:pd.Series,
-                                  transformation_function_list:list= ['deep_word_bug',
-                                                                      'diacritics',
-                                                                      'underline_accent_marks',
-                                                                      'upside_down_text',
-                                                                      'bidirectional_text',
-                                                                      'full_width_text',
-                                                                      'emoji_smuggling',
-                                                                      'spaces_text',
-                                                                      'homoglyphs',
-                                                                      'unicode_tags_smuggling',
-                                                                      'numbers_text'
-],
-                                  number_transformed_prompts_by_category:int=10,seed:int=17,intensity:float=0.5):
+                                  transformation_function_list:list= None,
+                                  number_transformed_prompts_by_category:int=10,
+                                  seed:int=17,
+                                  intensity:float=0.5):
+    if transformation_function_list is None:
+        transformation_function_list = ['deep_word_bug',
+                                        'diacritics',
+                                        'underline_accent_marks',
+                                        'upside_down_text',
+                                        'bidirectional_text',
+                                        'full_width_text',
+                                        'emoji_smuggling',
+                                        'spaces_text',
+                                        'homoglyphs',
+                                        'unicode_tags_smuggling',
+                                         'numbers_text']
+
     number_total_transformed_prompts=number_transformed_prompts_by_category*len(transformation_function_list)
     obfuscator = ObscuredText(seed=seed, intensity=intensity)
     result_column=prompts_column.copy()

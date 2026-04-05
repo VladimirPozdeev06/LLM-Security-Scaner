@@ -159,7 +159,10 @@ def generate_sft_json(row, name_model: str = 'llama3.1:8b'):
         options={'temperature': 0.1}
     )
     text = response['message']['content']
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return {}
 
 
 def create_sft_json_data(data: pd.DataFrame, file_save_name: str = 'sft_output.jsonl'):
@@ -172,8 +175,11 @@ def create_sft_json_data(data: pd.DataFrame, file_save_name: str = 'sft_output.j
         with ThreadPoolExecutor(max_workers=5) as executor:
             futures = {executor.submit(process_row, row): row for row in data.iterrows()}
             for future in tqdm(as_completed(futures), total=len(data)):
-                result = future.result()
-                f.write(json.dumps(result, ensure_ascii=False) + '\n')
+                try:
+                    result = future.result()
+                    f.write(json.dumps(result, ensure_ascii=False) + '\n')
+                except Exception as e:
+                    print(f"Error processing row: {e}")
 
 
 
