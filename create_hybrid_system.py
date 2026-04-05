@@ -47,7 +47,7 @@ def load_llm(base_model_path,peft_path:str,token,device:str='cpu'):
     return model,tokenizer
 
 def predict_classifier(prompt,model,tokenizer):
-    input=tokenizer(
+    inputs=tokenizer(
         prompt,
         return_tensors="pt",
         truncation=True,
@@ -56,7 +56,7 @@ def predict_classifier(prompt,model,tokenizer):
     )
 
     with torch.no_grad():
-        output=model(**input)
+        output=model(**inputs)
         probs=torch.softmax(output.logits,dim=1)
         prediction=torch.argmax(output.logits).item()
 
@@ -71,17 +71,17 @@ def generate_response(prompt,model,tokenizer,max_new_tokens:int=512):
         f"<|im_start|>user\n{prompt}<|im_end|>\n"
         f"<|im_start|>assistant\n"
     )
-    input=tokenizer(text,return_tensors='pt').to(model.device)
+    inputs=tokenizer(text,return_tensors='pt').to(model.device)
     with torch.no_grad():
         output=model.generate(
-            **input,
+            **inputs,
             max_new_tokens=max_new_tokens,
             repetition_penalty=1.1,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
             eos_token_id=tokenizer.eos_token_id
         )
-    input_len = input['input_ids'].shape[1]
+    input_len = inputs['input_ids'].shape[1]
     new_tokens = output[0][input_len:]
     return tokenizer.decode(new_tokens, skip_special_tokens=True)
 
@@ -120,10 +120,7 @@ def hybrid_system(prompt,
     }
 
 
-_classifier = None
-_clf_tokenizer = None
-_llm_model = None
-_llm_tokenizer = None
+
 
 def get_models():
     global _classifier,_clf_tokenizer,_llm_model,_llm_tokenizer

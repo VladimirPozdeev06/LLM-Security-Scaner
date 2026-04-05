@@ -166,10 +166,10 @@ def generate_responses_for_evaluate_second_step_hubrid_system(first_step_labels:
     responses_on_prompts_with_low_classifier_confidence = pd.Series(responses_on_prompts_with_low_classifier_confidence)
     responses_on_prompts_with_low_classifier_confidence.to_csv(
         'responses_on_prompts_with_low_classifier_confidence.csv')
-    low_confidence_data.loc[:, 'dpo_respone'] = responses_on_prompts_with_low_classifier_confidence
+    low_confidence_data.loc[:, 'dpo_response'] = responses_on_prompts_with_low_classifier_confidence
 
 
-    low_confidence_data.loc[:, 'is_unsafe_value'] = low_confidence_data['dpo_respone'].str.extract(
+    low_confidence_data.loc[:, 'is_unsafe_value'] = low_confidence_data['dpo_response'].str.extract(
         r'is_unsafe:\s*(\d+)', expand=False).astype(float)
 
     compute_all_metrics_responses(

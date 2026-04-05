@@ -170,7 +170,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  unsafe_prompt_category=unsafe_prompt_category,
                                                  is_drop_nan=is_drop_nan,
                                                  column_to_drop_nan=column_to_drop_nan)
-    data = data[['prompt', 'is_unsafe_prompts']]
+    data = data[['prompt', 'is_unsafe_prompt']]
     data=data.drop_duplicates(subset=['prompt'])
     if is_n_samples_split:
       data=data.head(n_samples_split)

@@ -174,7 +174,7 @@ if __name__=='__main__':
                                                                is_detect_english_texts=True
 
                                                                )
-    model, tokenizer = load_pretrained_model('prompts classifier')
+    model, tokenizer = load_pretrained_classification_model('prompts classifier')
     PKU_Alignment_PKU_SafeRLHF_train = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_train, model, tokenizer,
                                                            min_confidence=0.85)
     print('PKU_Alignment_PKU_SafeRLHF_train:')

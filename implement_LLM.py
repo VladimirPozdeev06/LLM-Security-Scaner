@@ -1,6 +1,6 @@
 import numpy as np
 from dotenv import load_dotenv
-from typing_extensions import final
+
 import ollama
 load_dotenv()
 import os
