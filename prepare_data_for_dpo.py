@@ -1,5 +1,6 @@
 from prepare_data_for_sft import process_cleaning_dataset_to_SFT
-from prompts_classifier import define_prompt_safety,load_pretrained_classification_model
+from prompts_classifier import define_prompt_safety
+from utils import  load_pretrained_classification_model
 from prepare_data_for_prompts_classifier import change_dataset_column_to_necessary_form
 from utils import extract_response_and_analysis, extract_analysis_fields
 import pandas as pd

@@ -49,12 +49,7 @@ def compute_metrics(pred) -> dict:
         'precision': precision
     }
 
-def load_pretrained_classification_model(path_to_model:str,device:str='cpu'):
-    tokenizer=AutoTokenizer.from_pretrained(path_to_model)
-    model=AutoModelForSequenceClassification.from_pretrained(path_to_model)
-    model.eval()
-    model.to(device)
-    return model, tokenizer
+
 
 def predict_batch(prompts:List,
                   model,

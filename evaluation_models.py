@@ -5,13 +5,13 @@ from sklearn.metrics import accuracy_score, classification_report,f1_score,preci
 import torch
 
 
-from prompts_classifier import load_pretrained_classification_model, define_prompt_safety
+from prompts_classifier import  define_prompt_safety
 from prepare_data_for_dpo import generate_batch
 from evaluate import load
 
 from bert_score import score
 import time
-from utils import extract_response_and_analysis, extract_analysis_fields
+from utils import extract_response_and_analysis, extract_analysis_fields,load_pretrained_classification_model
 from prompts_classifier import predict_batch
 
 def prepare_data_to_necessary_from_for_evaluation(path:str='final_test_data/test_data_final_all_models.csv',text_column:str='text')->pd.DataFrame:
@@ -182,7 +182,9 @@ def compute_metrics_for_hybrid_system(first_step_labels, low_confidence_data):
     compute_quantitative_metrics(second_step_labels)
 
 def win_rate(data1:pd.Series,data2:pd.Series):
-  return (((data2 == data1).sum() / 2)+(data2 > data1).sum()) /len(data1)
+    data1=data1.fillna(0)
+    data2=data2.fillna(0)
+    return (((data2 == data1).sum() / 2)+(data2 > data1).sum()) /len(data1)
 
 def prepare_data_for_win_rate_evaluation(data:pd.DataFrame, model_path='dpo_response_classifier',path1:str=None,path2:str=None,path3:str=None,path4:str=None):
     result_base = compute_all_metrics_responses(data, 'final_test_data/responses_base_model.csv',

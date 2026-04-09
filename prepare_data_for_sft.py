@@ -3,7 +3,8 @@ from prepare_data_for_prompts_classifier import (load_dataset_from_source,
                                                  change_dataset_column_to_necessary_form,
                                                  detect_english_text,
                                                  clean_prompt_text)
-from prompts_classifier import define_prompt_safety,load_pretrained_classification_model
+from prompts_classifier import define_prompt_safety
+from utils import load_pretrained_classification_model
 from implement_LLM import create_response_to_prompt
 from tqdm import tqdm
 from typing import Literal, List, Tuple,Union
