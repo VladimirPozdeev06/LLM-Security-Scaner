@@ -20,7 +20,7 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     && pip3 install --no-cache-dir -r requirements.txt
 
 
-COPY app.py .
+COPY fastapi_app.py .
 COPY create_hybrid_system.py .
 COPY utils.py .
 COPY prompts_classifier ./prompts_classifier
@@ -28,4 +28,4 @@ COPY dpo_model_extended ./dpo_model_extended
 
 EXPOSE 8000
 
-CMD ["python3", "-m", "uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "app:fastapi_app", "--host", "0.0.0.0", "--port", "8000"]

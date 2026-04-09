@@ -113,7 +113,9 @@ def compute_semantic_metrics(data:pd.DataFrame)->None:
 def compute_quantitative_metrics(data:pd.DataFrame)->None:
     print(f"Средняя длина ответа: {data['response_part'].str.len().mean()}")
 
-def compute_all_metrics_responses(test_data:pd.DataFrame,path_data:str,
+def compute_all_metrics_responses(test_data:pd.DataFrame,
+                                path_data:str,
+                                evaluated_data_text_column:str='0',
                                  model_path:str=None,
                                  is_format_metrics:bool=True,
                                  is_numeric_metrics:bool=True,
@@ -122,8 +124,8 @@ def compute_all_metrics_responses(test_data:pd.DataFrame,path_data:str,
                                  is_text_metrics:bool=True,
                                  is_semantic_metrics:bool=True,
                                  is_quantitative_metrics:bool=True):
-    responses=prepare_data_to_necessary_from_for_evaluation(path_data,text_column='0')
-    responses = responses.rename(columns={'0': 'response'})
+    responses=prepare_data_to_necessary_from_for_evaluation(path_data,text_column=evaluated_data_text_column)
+    responses = responses.rename(columns={evaluated_data_text_column: 'response'})
     data = pd.concat([test_data, responses], axis=1)
     if is_format_metrics:
         compute_format_metrics(data)

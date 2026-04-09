@@ -118,7 +118,7 @@ def hybrid_system(prompt,
         'prompt': prompt,
         'response':response_part,
         "analysis":analysis_part,
-        'is_unsafe_prompt': predictions_safety_results['is_unsafe_prompt']==1 ,
+        'is_unsafe_prompt': int(predictions_safety_results['is_unsafe_prompt']==1) ,
         "blocked_by_classifier": False,
         'predicted_classifier_confidence': predictions_safety_results['predicted_confidence']
     }
