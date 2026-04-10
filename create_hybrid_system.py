@@ -2,13 +2,14 @@ import torch
 from transformers import BitsAndBytesConfig, AutoTokenizer,AutoModelForCausalLM
 from peft import PeftModel
 from utils import extract_response_and_analysis,extract_analysis_fields,load_pretrained_classification_model
-
+from typing import Union, Literal
 import os
 from dotenv import load_dotenv
 load_dotenv()
 CLASSIFIER_PATH = os.getenv('CLASSIFIER_PATH', 'prompts_classifier')
 BASE_MODEL = os.getenv('BASE_MODEL', 'Qwen/Qwen3-4B')
 DPO_EXTENDED_PATH = os.getenv('DPO_EXTENDED_PATH', 'dpo_model_extended')
+BASE_MODEL_PATH = os.getenv('BASE_MODEL_PATH', 'base_model')
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DEFAULT_MAX_NEW_TOKENS = 512
 DEFAULT_CLASSIFIER_THRESHOLD = 0.85
@@ -29,10 +30,12 @@ BNB_CONFIG = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     bnb_4bit_compute_dtype=torch.float16
 )
-def load_llm(base_model_path,peft_path:str,token,device:str='cpu'):
-    tokenizer=AutoTokenizer.from_pretrained(base_model_path,token=token,trust_remote_code=True)
+def load_llm(base_model_name,peft_path:Union[str,None],token,device:str='cpu'):
+    tokenizer=AutoTokenizer.from_pretrained(base_model_name,token=token,trust_remote_code=True)
+
+
     if device=='cuda':
-        base_model=AutoModelForCausalLM.from_pretrained(base_model_path,
+        base_model=AutoModelForCausalLM.from_pretrained(base_model_name,
                                                     quantization_config=BNB_CONFIG,
                                                     dtype=torch.float16,
                                                     device_map='auto',
@@ -40,13 +43,18 @@ def load_llm(base_model_path,peft_path:str,token,device:str='cpu'):
                                                     )
     else:
         base_model = AutoModelForCausalLM.from_pretrained(
-            base_model_path,
+            base_model_name,
             dtype=torch.float32,
             token=token
         )
-    model=PeftModel.from_pretrained(base_model,peft_path)
-    model.eval()
-    return model,tokenizer
+    if peft_path:
+        model=PeftModel.from_pretrained(base_model,peft_path)
+        model.eval()
+
+        return model,tokenizer
+    else:
+        base_model.eval()
+        return base_model,tokenizer
 
 def predict_classifier(prompt,model,tokenizer):
     inputs=tokenizer(
@@ -66,7 +74,8 @@ def predict_classifier(prompt,model,tokenizer):
     return {
         "prompt":prompt,
         'is_unsafe_prompt':prediction,
-        'predicted_confidence': (probs[0][0] if prediction==0 else probs[0][1]).item()
+        'predicted_safe_confidence': (probs[0][0]).item(),
+        'predicted_unsafe_confidence': (probs[0][1]).item()
     }
 def generate_response(prompt,model,tokenizer,max_new_tokens:int=DEFAULT_MAX_NEW_TOKENS):
     text = (
@@ -95,7 +104,7 @@ def hybrid_system(prompt,
                   threshold:float=DEFAULT_CLASSIFIER_THRESHOLD,
                   max_new_tokens:int=DEFAULT_MAX_NEW_TOKENS):
     predictions_safety_results=predict_classifier(prompt,classifier_model,classifier_tokenizer)
-    if predictions_safety_results['is_unsafe_prompt']==1 and predictions_safety_results['predicted_confidence']>threshold:
+    if predictions_safety_results['is_unsafe_prompt']==1 and predictions_safety_results['predicted_unsafe_confidence']>threshold:
         return {
             "prompt": prompt,
             "response": "I cannot assist with this request as it has been identified as potentially harmful.",
@@ -106,7 +115,8 @@ def hybrid_system(prompt,
             ),
             'is_unsafe_prompt': 1,
             "blocked_by_classifier": True,
-            'predicted_classifier_confidence': predictions_safety_results['predicted_confidence'],
+            'predicted_safe_confidence': predictions_safety_results[ 'predicted_safe_confidence'],
+            'predicted_unsafe_confidence': predictions_safety_results['predicted_unsafe_confidence'],
         }
     response=generate_response(prompt,llm_model,llm_tokenizer,max_new_tokens)
     if '</think>' in response:
@@ -120,19 +130,24 @@ def hybrid_system(prompt,
         "analysis":analysis_part,
         'is_unsafe_prompt': int(predictions_safety_results['is_unsafe_prompt']==1) ,
         "blocked_by_classifier": False,
-        'predicted_classifier_confidence': predictions_safety_results['predicted_confidence']
+        'predicted_safe_confidence': predictions_safety_results[ 'predicted_safe_confidence'],
+        'predicted_unsafe_confidence': predictions_safety_results['predicted_unsafe_confidence'],
     }
 
 
 
 _classifier = None
 _clf_tokenizer = None
-_llm_model = None
+_llm_base_model = None
+_llm_dpo_model = None
 _llm_tokenizer = None
 def get_models():
-    global _classifier,_clf_tokenizer,_llm_model,_llm_tokenizer
+    global _classifier,_clf_tokenizer,_llm_dpo_model,_llm_tokenizer
     if _classifier is None:
         _classifier,_clf_tokenizer=load_pretrained_classification_model(CLASSIFIER_PATH,DEVICE)
-    if _llm_model is None:
-        _llm_model,_llm_tokenizer=load_llm(BASE_MODEL,DPO_EXTENDED_PATH,HF_TOKEN,DEVICE)
-    return _classifier, _clf_tokenizer, _llm_model, _llm_tokenizer
+    if _llm_base_model is None:
+        _llm_model, _llm_tokenizer = load_llm(BASE_MODEL, peft_path=None, token=HF_TOKEN, device=DEVICE)
+
+    if _llm_dpo_model is None:
+            _llm_dpo_model,_llm_tokenizer=load_llm(BASE_MODEL,DPO_EXTENDED_PATH,HF_TOKEN,DEVICE)
+    return _classifier, _clf_tokenizer, _llm_base_model ,_llm_dpo_model, _llm_tokenizer
