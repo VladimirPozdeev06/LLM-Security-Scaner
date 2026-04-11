@@ -38,9 +38,9 @@ def compute_metrics(pred) -> dict:
     predictions = np.argmax(logits, axis=-1)
 
     acc = accuracy_score(labels, predictions)
-    f1 = f1_score(labels, predictions, average='macro')
-    recall = recall_score(labels, predictions)
-    precision = precision_score(labels, predictions)
+    f1 = f1_score(labels, predictions, average='binary')
+    recall = recall_score(labels, predictions,average='binary')
+    precision = precision_score(labels, predictions,average='binary')
     return {
         'accuracy': acc,
         'f1': f1,

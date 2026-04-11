@@ -208,7 +208,7 @@ if __name__ == '__main__':
                                                                            is_detect_english_texts=True
 
                                                                            )
-    model, tokenizer = load_pretrained_classification_model('prompts classifier')
+    model, tokenizer = load_pretrained_classification_model('prompts_classifier')
     PKU_Alignment_PKU_SafeRLHF_train = define_prompt_safety(PKU_Alignment_PKU_SafeRLHF_train,
                                                                 model, tokenizer,
                                                                 min_confidence=None,save_confidence=True)
@@ -272,7 +272,7 @@ if __name__ == '__main__':
         prompt_column='prompt'
 
     )
-    model, tokenizer = load_pretrained_classification_model('prompts classifier')
+    model, tokenizer = load_pretrained_classification_model('prompts_classifier')
     claude_dataset=define_prompt_safety(claude_dataset, model, tokenizer,
                                                             min_confidence=None,save_confidence=True)
     claude_dataset=process_cleaning_data_to_DPO(data=claude_dataset,

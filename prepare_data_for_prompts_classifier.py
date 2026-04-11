@@ -141,7 +141,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                  list_categories:list=None,
                  target_category_column:str=None,
                  is_drop_nan:bool=False,
-                 column_to_drop_nan:str=None,
+                 columns_to_drop_nan:list[str]=None,
                  is_detect_english_texts:bool=False,
                  min_confidence:float=0.95,
                  is_n_samples_split:bool=False,
@@ -169,7 +169,7 @@ def complete_process_loading_dataset(path_to_dataset:str,
                                                  category_column=category_column,
                                                  unsafe_prompt_category=unsafe_prompt_category,
                                                  is_drop_nan=is_drop_nan,
-                                                 columns_to_drop_nan=column_to_drop_nan)
+                                                 columns_to_drop_nan=columns_to_drop_nan)
     data = data[['prompt', 'is_unsafe_prompt']]
     data=data.drop_duplicates(subset=['prompt'])
     if is_n_samples_split:

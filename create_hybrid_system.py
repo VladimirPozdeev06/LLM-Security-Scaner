@@ -118,11 +118,12 @@ def hybrid_system(prompt,
             'predicted_safe_confidence': predictions_safety_results[ 'predicted_safe_confidence'],
             'predicted_unsafe_confidence': predictions_safety_results['predicted_unsafe_confidence'],
         }
-
-    if use_alignment:
-        llm_model.enable_adapter_layers()
-    else:
-        llm_model.disable_adapter_layers()
+    from peft import PeftModel
+    if isinstance(llm_model, PeftModel):
+        if use_alignment:
+            llm_model.enable_adapter_layers()
+        else:
+            llm_model.disable_adapter_layers()
     response=generate_response(prompt,llm_model,llm_tokenizer,max_new_tokens)
     if '</think>' in response:
         response = response.split('</think>')[-1].strip()
