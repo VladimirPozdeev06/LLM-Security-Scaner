@@ -28,4 +28,4 @@ COPY dpo_model_extended ./dpo_model_extended
 
 EXPOSE 8000
 
-CMD ["python3", "-m", "uvicorn", "app:fastapi_app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python3", "-m", "uvicorn", "fastapi_app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -39,6 +39,7 @@ class PromptRequest(BaseModel):
     prompt: str
     max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS
     threshold: float = DEFAULT_CLASSIFIER_THRESHOLD
+    use_alignment: bool = True
 
 
 
@@ -53,13 +54,14 @@ async def analyze(prompt_request: PromptRequest,request: Request):
     logger.info(f"Analyzing prompt, length={len(prompt)}")
     max_new_tokens=prompt_request.max_new_tokens
     threshold=prompt_request.threshold
-
+    use_alignment=prompt_request.use_alignment
     response = hybrid_system(
         prompt,
         request.app.state.clf_tokenizer,
         request.app.state.classifier,
         request.app.state.llm_tokenizer,
         request.app.state.llm_model,
+        use_alignment,
         threshold,
         max_new_tokens
     )

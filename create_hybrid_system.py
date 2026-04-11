@@ -44,7 +44,7 @@ def load_llm(base_model_name,peft_path:Union[str,None],token,device:str='cpu'):
     else:
         base_model = AutoModelForCausalLM.from_pretrained(
             base_model_name,
-            dtype=torch.float32,
+            dtype=torch.float16,
             token=token
         )
     if peft_path:
@@ -100,7 +100,7 @@ def generate_response(prompt,model,tokenizer,max_new_tokens:int=DEFAULT_MAX_NEW_
 
 def hybrid_system(prompt,
                   classifier_tokenizer,classifier_model,
-                  llm_tokenizer,llm_model,
+                  llm_tokenizer,llm_model, use_alignment:bool=True,
                   threshold:float=DEFAULT_CLASSIFIER_THRESHOLD,
                   max_new_tokens:int=DEFAULT_MAX_NEW_TOKENS):
     predictions_safety_results=predict_classifier(prompt,classifier_model,classifier_tokenizer)
@@ -118,6 +118,11 @@ def hybrid_system(prompt,
             'predicted_safe_confidence': predictions_safety_results[ 'predicted_safe_confidence'],
             'predicted_unsafe_confidence': predictions_safety_results['predicted_unsafe_confidence'],
         }
+
+    if use_alignment:
+        llm_model.enable_adapter_layers()
+    else:
+        llm_model.disable_adapter_layers()
     response=generate_response(prompt,llm_model,llm_tokenizer,max_new_tokens)
     if '</think>' in response:
         response = response.split('</think>')[-1].strip()
@@ -138,16 +143,14 @@ def hybrid_system(prompt,
 
 _classifier = None
 _clf_tokenizer = None
-_llm_base_model = None
 _llm_dpo_model = None
 _llm_tokenizer = None
 def get_models():
     global _classifier,_clf_tokenizer,_llm_dpo_model,_llm_tokenizer
     if _classifier is None:
         _classifier,_clf_tokenizer=load_pretrained_classification_model(CLASSIFIER_PATH,DEVICE)
-    if _llm_base_model is None:
-        _llm_model, _llm_tokenizer = load_llm(BASE_MODEL, peft_path=None, token=HF_TOKEN, device=DEVICE)
+
 
     if _llm_dpo_model is None:
             _llm_dpo_model,_llm_tokenizer=load_llm(BASE_MODEL,DPO_EXTENDED_PATH,HF_TOKEN,DEVICE)
-    return _classifier, _clf_tokenizer, _llm_base_model ,_llm_dpo_model, _llm_tokenizer
+    return _classifier, _clf_tokenizer,_llm_dpo_model, _llm_tokenizer
